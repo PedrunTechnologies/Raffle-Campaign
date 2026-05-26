@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-:root {
+/* :root {
   --background: #ffffff;
   --foreground: #171717;
 }
@@ -23,4 +23,92 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+} */
+
+
+
+:root {
+  /* BACKGROUNDS */
+
+  --bg: #F4F6FB;
+  --bg2: #ECF0FA;
+
+  --paper: #FFFFFF;
+
+  /* TEXT */
+
+  --ink: #0A0F1F;
+  --ink-soft: #3A4258;
+
+  --mute: #6B7490;
+
+  /* LINES */
+
+  --line: #E3E8F2;
+
+  /* PRIMARY */
+
+  --blue: #1E5BFF;
+  --blue-dark: #0E3FCC;
+  --blue-soft: #DCE6FF;
+
+  /* ACCENT */
+
+  --lime: #D9F23C;
+  --lime-dark: #B5CC22;
+
+  /* STATUS */
+
+  --forest: #0F9A56;
+
+  /* GREYS */
+
+  --grey-50: #F7F8FB;
+  --grey-100: #E8ECF3;
+  --grey-200: #CFD6E4;
+  --grey-300: #9AA3BA;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background-color: var(--bg);
+
+  color: var(--ink);
+
+  background-image:
+    radial-gradient(at 8% 4%,
+      rgba(217, 242, 60, .22) 0,
+      transparent 38%),
+
+    radial-gradient(at 96% 92%,
+      rgba(30, 91, 255, .14) 0,
+      transparent 46%);
+
+  font-family: Helvetica, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7490' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  padding-right: 2.5rem;
+  background-repeat: no-repeat;
+  background-position: 98% center;
 }
