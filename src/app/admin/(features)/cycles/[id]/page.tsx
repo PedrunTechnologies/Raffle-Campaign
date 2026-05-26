@@ -115,10 +115,10 @@ export default function CycleDetailPage() {
           <span className="text-sm font-medium text-[var(--ink)]">Voucher pool</span>
           <span className="font-mono text-sm font-semibold">{totalFree + totalDiscount}</span>
         </div>
-        <div className="inline-flex items-center gap-2 rounded-2xl border border-[var(--line)] bg-white px-4 py-2.5">
+        {/* <div className="inline-flex items-center gap-2 rounded-2xl border border-[var(--line)] bg-white px-4 py-2.5">
           <span className="text-sm font-medium text-[var(--ink)]">Winners</span>
           <span className="font-mono text-sm font-semibold">{cycle.winnersCount}</span>
-        </div>
+        </div> */}
       </div>
 
       <div className="max-w-3xl space-y-5">
@@ -143,7 +143,6 @@ export default function CycleDetailPage() {
         {/* Draw */}
         <Panel title="Draw parameters">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField label="Winners"              value={String(cycle.winnersCount)} />
             <FormField label="Min tasks to qualify" value={String(cycle.minTasksToQualify)} />
           </div>
           {isDone && cycle.drawLogId && (

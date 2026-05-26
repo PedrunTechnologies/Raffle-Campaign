@@ -6,18 +6,18 @@ import type { VendorRecord } from "@/lib/types";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json() as {
-      name:           string;
-      businessType:   string;
-      cuisine:        string;
-      address:        string;
+      name: string;
+      businessType: string;
+      cuisine: string;
+      address: string;
       operatingHours: string;
-      dineIn:         "yes" | "no";
-      contactName:    string;
-      contactRole:    string;
-      phone:          string;
-      email:          string;
-      password:       string;
-      socials:        { instagram?: string; facebook?: string; x?: string };
+      dineIn: "yes" | "no";
+      contactName: string;
+      contactRole: string;
+      phone: string;
+      email: string;
+      password: string;
+      socials: { instagram?: string; facebook?: string; x?: string };
     };
 
     /* ── Validate required fields ── */
@@ -44,9 +44,9 @@ export async function POST(req: NextRequest) {
 
     /* ── Create Firebase Auth user ── */
     const userRecord = await adminAuth.createUser({
-      email:        body.email,
-      password:     body.password,
-      displayName:  body.contactName,
+      email: body.email,
+      password: body.password,
+      displayName: body.contactName,
     });
 
     /* ── Create vendor Firestore doc ── */
@@ -55,23 +55,24 @@ export async function POST(req: NextRequest) {
     const vendor: Omit<VendorRecord, "createdAt" | "updatedAt"> & {
       createdAt: unknown; updatedAt: unknown;
     } = {
-      id:             vendorRef.id,
-      uid:            userRecord.uid,
-      name:           body.name.trim(),
-      businessType:   body.businessType,
-      cuisine:        body.cuisine,
-      address:        body.address.trim(),
+      id: vendorRef.id,
+      uid: userRecord.uid,
+      name: body.name.trim(),
+      businessType: body.businessType,
+      cuisine: body.cuisine,
+      address: body.address.trim(),
       operatingHours: body.operatingHours.trim(),
-      dineIn:         body.dineIn,
-      contactName:    body.contactName.trim(),
-      contactRole:    body.contactRole?.trim() ?? "",
-      phone:          body.phone.trim(),
-      email:          body.email.toLowerCase().trim(),
-      socials:        body.socials ?? {},
-      status:         "pending",      // admin must approve before they can log in
-      cycleCount:     0,
-      createdAt:      FieldValue.serverTimestamp(),
-      updatedAt:      FieldValue.serverTimestamp(),
+      dineIn: body.dineIn,
+      contactName: body.contactName.trim(),
+      contactRole: body.contactRole?.trim() ?? "",
+      phone: body.phone.trim(),
+      email: body.email.toLowerCase().trim(),
+      socials: body.socials ?? {},
+      status: "pending",      // admin must approve before they can log in
+      cycleCount: 0,
+      cycles: [],
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     };
 
     await vendorRef.set(vendor);

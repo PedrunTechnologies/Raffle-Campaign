@@ -12,8 +12,7 @@ import { auth } from "@/lib/firebase";
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") ?? "/admin/overview";
+  const redirect = "/admin/overview";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

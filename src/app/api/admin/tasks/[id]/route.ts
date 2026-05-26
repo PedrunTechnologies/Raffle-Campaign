@@ -29,12 +29,14 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const result = await requireAdmin(req);
   if ("error" in result) return result.error;
 
-  const snap = await adminDb.doc(`tasks/${params.id}`).get();
+  const { id } = await params;
+
+  const snap = await adminDb.doc(`tasks/${id}`).get();
   if (!snap.exists) {
     return NextResponse.json({ error: "Task not found." }, { status: 404 });
   }
@@ -50,7 +52,7 @@ export async function PATCH(
     }
   }
 
-  await adminDb.doc(`tasks/${params.id}`).update({
+  await adminDb.doc(`tasks/${id}`).update({
     ...body,
     updatedAt: FieldValue.serverTimestamp(),
   });
@@ -60,12 +62,14 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const result = await requireAdmin(req);
   if ("error" in result) return result.error;
+  
+  const { id } = await params;
 
-  const snap = await adminDb.doc(`tasks/${params.id}`).get();
+  const snap = await adminDb.doc(`tasks/${id}`).get();
   if (!snap.exists) {
     return NextResponse.json({ error: "Task not found." }, { status: 404 });
   }
@@ -78,6 +82,6 @@ export async function DELETE(
     );
   }
 
-  await adminDb.doc(`tasks/${params.id}`).delete();
+  await adminDb.doc(`tasks/${id}`).delete();
   return NextResponse.json({ ok: true });
 }

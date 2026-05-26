@@ -6,7 +6,7 @@ type Platform = "instagram" | "facebook" | "x";
 
 interface SocialEntry {
   platform: Platform;
-  handle:   string;
+  handle: string;
 }
 
 export async function POST(req: NextRequest) {
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   }
 
   const valid: Platform[] = ["instagram", "facebook", "x"];
-  const socials           = body.socials.filter(
+  const socials = body.socials.filter(
     (s) => valid.includes(s.platform) && s.handle?.trim()
   );
 
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     const clean = handle.trim().replace(/^@/, "").replace(/^fb\//, "");
     updates[`socials.${platform}`] = {
       platform,
-      handle:   clean,
+      handle: clean,
       linkedAt: FieldValue.serverTimestamp(),
     };
   }
@@ -87,11 +87,15 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Invalid platform." }, { status: 400 });
   }
 
-  const { deleteField } = await import("firebase-admin/firestore");
+  // const { deleteField } = await import("firebase-admin/firestore");
 
+  // await adminDb.doc(`users/${uid}`).update({
+  //   [`socials.${platform}`]: deleteField(),
+  //   updatedAt:               FieldValue.serverTimestamp(),
+  // });
   await adminDb.doc(`users/${uid}`).update({
-    [`socials.${platform}`]: deleteField(),
-    updatedAt:               FieldValue.serverTimestamp(),
+    [`socials.${platform}`]: FieldValue.delete(),
+    updatedAt: FieldValue.serverTimestamp(),
   });
 
   return NextResponse.json({ ok: true });

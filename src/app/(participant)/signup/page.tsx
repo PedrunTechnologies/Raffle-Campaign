@@ -13,8 +13,7 @@ import { signUpWithEmail, signInWithGoogle } from "@/lib/auth-actions";
 
 export default function SignupPage() {
   const router       = useRouter();
-  const searchParams = useSearchParams();
-  const redirect     = searchParams.get("redirect") ?? "/link-socials";
+  const redirect     = "/link-socials";
 
   const [name,     setName]     = useState("");
   const [email,    setEmail]    = useState("");

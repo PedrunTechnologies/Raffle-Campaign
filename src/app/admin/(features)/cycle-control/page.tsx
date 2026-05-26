@@ -3,12 +3,12 @@
 import Button from "@/components/ui/Button";
 import { Panel, Badge, PageHeader } from "@/components/admin/AdminUI";
 import { useEffect, useState, useCallback } from "react";
-import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { CycleRecord, TaskRecord } from "@/lib/types";
 import { adminGet, adminPost, adminPatch, AdminFetchError } from "@/lib/admin-fetch";
 import { toInputValue, toDisplayTime } from "@/lib/helpers";
+import { Suspense } from "react";
 
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -78,9 +78,7 @@ type ModalAction = "start" | "close" | null;
 
 /* ── page ─────────────────────────────────────────────────────────── */
 
-export default function CycleControlPage() {
-  const { user } = useAdminAuth();
-  const router = useRouter();
+function CycleControlContent() {
   const sp = useSearchParams();
   const qid = sp.get("id"); // optional ?id= from cycles list
 
@@ -553,3 +551,18 @@ export default function CycleControlPage() {
   );
 }
 
+export default function CycleControlPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <p className="text-sm text-[var(--ink-soft)]">
+            Loading cycle data…
+          </p>
+        </div>
+      }
+    >
+      <CycleControlContent />
+    </Suspense>
+  );
+}
