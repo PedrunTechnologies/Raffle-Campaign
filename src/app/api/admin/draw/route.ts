@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
   }
 
   const cycleDoc = activeSnap.docs[0];
-  const cycle    = cycleDoc.data() as CycleRecord;
+  const cycle = cycleDoc.data() as CycleRecord;
 
   /* ── 2. Guard: draw already run for this cycle ────────────────── */
   if (cycle.drawLogId) {
@@ -154,11 +154,11 @@ export async function POST(req: NextRequest) {
   const vouchersSnap = await adminDb
     .collection("vouchers")
     .where("cycleId", "==", cycle.id)
-    .where("status",  "==", "eligible")
+    .where("status", "==", "eligible")
     .get();
 
   const eligible = vouchersSnap.docs.map((d) => d.data() as VoucherRecord);
-  const pool     = eligible.length;
+  const pool = eligible.length;
 
   if (pool === 0) {
     return NextResponse.json(
@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
   // so the shuffle is what randomises who gets what — not the order here.
 
   type Prize =
-    | { type: "free";     vendorId: string; vendorName: string }
+    | { type: "free"; vendorId: string; vendorName: string }
     | { type: "discount"; vendorId: string; vendorName: string; discountPct: number; dineInAvailable: string; dineInUntil: string };
 
   const prizePool: Prize[] = [];
@@ -196,12 +196,12 @@ export async function POST(req: NextRequest) {
     for (const tier of sortedTiers) {
       for (let i = 0; i < tier.quantity; i++) {
         prizePool.push({
-          type:             "discount",
+          type: "discount",
           vendorId,
           vendorName,
-          discountPct:      tier.percentage,
-          dineInAvailable:  tier.dineInAvailable,
-          dineInUntil:      tier.dineInUntil,
+          discountPct: tier.percentage,
+          dineInAvailable: tier.dineInAvailable,
+          dineInUntil: tier.dineInUntil,
         });
       }
     }
@@ -224,8 +224,8 @@ export async function POST(req: NextRequest) {
   // This means the luckiest participants (drawn earliest) get free meals.
 
   const shuffledParticipants = cryptoShuffle([...eligible]);
-  const prizeWinners         = shuffledParticipants.slice(0, totalPrizes);
-  const noPrize              = shuffledParticipants.slice(totalPrizes);
+  const prizeWinners = shuffledParticipants.slice(0, totalPrizes);
+  const noPrize = shuffledParticipants.slice(totalPrizes);
 
   // Pair each winner with their prize
   const assignments = prizeWinners.map((voucher, i) => ({
@@ -234,25 +234,25 @@ export async function POST(req: NextRequest) {
   }));
 
   /* ── 6. Categorise for the draw log ──────────────────────────── */
-  const freeCodes     = assignments.filter((a) => a.prize.type === "free")    .map((a) => a.voucher.code);
+  const freeCodes = assignments.filter((a) => a.prize.type === "free").map((a) => a.voucher.code);
   const discountCodes = assignments.filter((a) => a.prize.type === "discount").map((a) => a.voucher.code);
-  const voucherCodes  = [...freeCodes, ...discountCodes]; // all distributed (free + discount)
+  const voucherCodes = [...freeCodes, ...discountCodes]; // all distributed (free + discount)
 
   /* ── 7. Write results in a batch ─────────────────────────────── */
   const logRef = adminDb.collection("drawLogs").doc();
 
   const log: Omit<DrawLogRecord, "executedAt"> & { executedAt: unknown } = {
-    id:               logRef.id,
-    cycleId:          cycle.id,
-    cycleNumber:      cycle.cycleNumber,
-    triggeredBy:      result.admin.uid,
-    triggeredByName:  result.admin.displayName,
-    eligiblePool:     pool,
+    id: logRef.id,
+    cycleId: cycle.id,
+    cycleNumber: cycle.cycleNumber,
+    triggeredBy: result.admin.uid,
+    triggeredByName: result.admin.displayName,
+    eligiblePool: pool,
     voucherCodes,
     freeCodes,
     discountCodes,
-    status:           "completed",
-    executedAt:       FieldValue.serverTimestamp(),
+    status: "completed",
+    executedAt: FieldValue.serverTimestamp(),
   };
 
   const batch = adminDb.batch();
@@ -262,32 +262,38 @@ export async function POST(req: NextRequest) {
 
   /* Update cycle with drawLogId (keep as "started" — admin closes manually) */
   batch.update(cycleDoc.ref, {
-    drawLogId:  logRef.id,
-    updatedAt:  FieldValue.serverTimestamp(),
+    drawLogId: logRef.id,
+    updatedAt: FieldValue.serverTimestamp(),
   });
 
   /* Update winner vouchers with their assigned prize */
   for (const { voucher, prize } of assignments) {
     const ref = adminDb.collection("vouchers").doc(voucher.code);
 
+    const expiresAt = new Date(
+      Date.now() + cycle.cooldownHours * 60 * 60 * 1000
+    );
+
     if (prize.type === "free") {
       batch.update(ref, {
-        status:     "won",
-        type:       "free",
-        vendorId:   prize.vendorId,
+        status: "won",
+        type: "free",
+        vendorId: prize.vendorId,
         vendorName: prize.vendorName,
-        updatedAt:  FieldValue.serverTimestamp(),
+        expiresAt,
+        updatedAt: FieldValue.serverTimestamp(),
       });
     } else {
       batch.update(ref, {
-        status:           "won",
-        type:             "discount",
-        discountPct:      prize.discountPct,
-        dineInAvailable:  prize.dineInAvailable,
-        dineInUntil:      prize.dineInUntil,
-        vendorId:         prize.vendorId,
-        vendorName:       prize.vendorName,
-        updatedAt:        FieldValue.serverTimestamp(),
+        status: "won",
+        type: "discount",
+        discountPct: prize.discountPct,
+        dineInAvailable: prize.dineInAvailable,
+        dineInUntil: prize.dineInUntil,
+        vendorId: prize.vendorId,
+        vendorName: prize.vendorName,
+        expiresAt,
+        updatedAt: FieldValue.serverTimestamp(),
       });
     }
   }
@@ -296,7 +302,7 @@ export async function POST(req: NextRequest) {
   for (const voucher of noPrize) {
     const ref = adminDb.collection("vouchers").doc(voucher.code);
     batch.update(ref, {
-      status:    "no_prize",
+      status: "no_prize",
       updatedAt: FieldValue.serverTimestamp(),
     });
   }
@@ -304,9 +310,9 @@ export async function POST(req: NextRequest) {
   await batch.commit();
 
   return NextResponse.json({
-    ok:           true,
-    drawLogId:    logRef.id,
-    cycleNumber:  cycle.cycleNumber,
+    ok: true,
+    drawLogId: logRef.id,
+    cycleNumber: cycle.cycleNumber,
     eligiblePool: pool,
     voucherCodes,
     freeCodes,

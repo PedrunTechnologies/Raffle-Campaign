@@ -35,9 +35,9 @@ const NAV_MANAGE = [
   { href: "/admin/draw-logs", icon: HiOutlineCollection, label: "Draw logs" },
 ];
 
-const NAV_SETTINGS = [
-  { href: "/admin/configuration", icon: HiOutlineCog, label: "Configuration" },
-];
+// const NAV_SETTINGS = [
+//   { href: "/admin/configuration", icon: HiOutlineCog, label: "Configuration" },
+// ];
 
 
 function NavLink({
@@ -93,8 +93,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {NAV_MAIN.map((i) => <NavLink key={i.href} {...i} onClick={onNav} />)}
         <NavGroup label="Manage" />
         {NAV_MANAGE.map((i) => <NavLink key={i.href} {...i} onClick={onNav} />)}
-        <NavGroup label="Settings" />
-        {NAV_SETTINGS.map((i) => <NavLink key={i.href} {...i} onClick={onNav} />)}
+        {/* <NavGroup label="Settings" />
+        {NAV_SETTINGS.map((i) => <NavLink key={i.href} {...i} onClick={onNav} />)} */}
       </nav>
 
       {/* Identity + logout */}

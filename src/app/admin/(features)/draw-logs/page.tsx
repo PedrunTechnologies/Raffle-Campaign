@@ -2,7 +2,7 @@
 
 import Button from "@/components/ui/Button";
 import Link from "next/link";
-import { Panel, Badge, Table, Tr, Td, PageHeader } from "@/components/admin/AdminUI";
+import { Panel, Badge, Table, Tr, Td, PageHeader, KpiTile } from "@/components/admin/AdminUI";
 import { useEffect, useState } from "react";
 import { adminGet, AdminFetchError } from "@/lib/admin-fetch";
 
@@ -18,16 +18,16 @@ const STATUS_LABEL: Record<string, string> = {
 
 
 interface DrawLogRecord {
-  id:              string;
-  cycleId:         string;
-  cycleNumber:     number;
-  executedAt:      { _seconds: number };
+  id: string;
+  cycleId: string;
+  cycleNumber: number;
+  executedAt: { _seconds: number };
   triggeredByName: string;
-  eligiblePool:    number;
-  winnersCount:    number;
-  winnerCodes:     string[];
-  status:          "completed" | "error";
-  errorMessage?:   string;
+  eligiblePool: number;
+  winnersCount: number;
+  winnerCodes: string[];
+  status: "completed" | "error";
+  errorMessage?: string;
 }
 
 function fmtTs(ts: { _seconds: number } | null | undefined): string {
@@ -45,9 +45,9 @@ function fmtTs(ts: { _seconds: number } | null | undefined): string {
 
 
 export default function DrawLogsPage() {
-  const [logs,    setLogs]    = useState<DrawLogRecord[]>([]);
+  const [logs, setLogs] = useState<DrawLogRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState("");
+  const [error, setError] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,8 +61,8 @@ export default function DrawLogsPage() {
 
   /* ── summary stats ─────────────────────────────────────────────── */
   const completed = logs.filter((l) => l.status === "completed");
-  const errors    = logs.filter((l) => l.status === "error");
-  const avgPool   = completed.length
+  const errors = logs.filter((l) => l.status === "error");
+  const avgPool = completed.length
     ? Math.round(completed.reduce((s, l) => s + l.eligiblePool, 0) / completed.length)
     : 0;
 
@@ -77,33 +77,24 @@ export default function DrawLogsPage() {
       {/* Summary strip */}
       <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { label: "Total draws",   value: String(logs.length)       },
-          { label: "Completed",     value: String(completed.length)  },
-          { label: "Errors",        value: String(errors.length)     },
+          { label: "Total draws", value: String(logs.length) },
+          { label: "Completed", value: String(completed.length) },
+          { label: "Errors", value: String(errors.length) },
           { label: "Avg pool size", value: avgPool ? String(avgPool) : "—" },
         ].map((s) => (
-          <div key={s.label} className="rounded-2xl border border-[var(--line)] bg-white p-4">
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-[var(--mute)]">
-              {s.label}
-            </p>
-            <p
-              className="text-3xl font-light tracking-tight"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              {loading ? "—" : s.value}
-            </p>
-          </div>
+          <KpiTile
+            key={s.label}
+            label={s.label}
+            value={loading ? "—" : s.value}
+            detail=""
+          />
         ))}
       </div>
 
       <Panel title="All draw logs" noPadding>
-        {loading ? (
-          <div className="px-5 py-10 text-center text-sm text-[var(--ink-soft)]">
-            Loading draw logs…
-          </div>
-        ) : error ? (
+        {error ? (
           <div className="px-5 py-10 text-center text-sm text-[var(--blue)]">{error}</div>
-        ) : logs.length === 0 ? (
+        ) : (!loading && logs.length === 0) ? (
           <div className="px-5 py-14 text-center">
             <p className="mb-1 text-sm font-semibold text-[var(--ink)]">No draws yet</p>
             <p className="mb-4 text-sm text-[var(--ink-soft)]">
@@ -113,7 +104,7 @@ export default function DrawLogsPage() {
           </div>
         ) : (
           <div>
-            <Table headers={["Draw ID", "Cycle", "Executed at", "Pool", "Winners", "Triggered by", "Status", ""]}>
+            <Table loading={loading} headers={["Draw ID", "Cycle", "Executed at", "Pool", "Winners", "Triggered by", "Status", ""]}>
               {logs.map((log) => (
                 <>
                   <Tr key={log.id}>
@@ -159,7 +150,7 @@ export default function DrawLogsPage() {
                           </p>
                         ) : (
                           <div>
-                            <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-[var(--mute)]">
+                            {/* <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-[var(--mute)]">
                               Winner voucher{log.winnerCodes.length > 1 ? "s" : ""}
                             </p>
                             <div className="flex flex-wrap gap-2">
@@ -171,7 +162,7 @@ export default function DrawLogsPage() {
                                   {code}
                                 </span>
                               ))}
-                            </div>
+                            </div> */}
                             <p className="mt-2 text-xs text-[var(--ink-soft)]">
                               Full Draw ID: <span className="font-mono">{log.id}</span>
                             </p>

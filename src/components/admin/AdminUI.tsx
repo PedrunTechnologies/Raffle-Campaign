@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { TableLoader } from "../ui/Loader";
 
 /* ─── KPI tile ─── */
 export function KpiTile({
@@ -20,23 +21,21 @@ export function KpiTile({
     detailVariant === "up"
       ? "text-[var(--forest)]"
       : detailVariant === "down"
-      ? "text-[var(--blue)]"
-      : accent
-      ? "text-[var(--lime)]"
-      : "text-[var(--ink-soft)]";
+        ? "text-[var(--blue)]"
+        : accent
+          ? "text-[var(--lime)]"
+          : "text-[var(--ink-soft)]";
 
   return (
     <div
-      className={`rounded-2xl border p-5 ${
-        accent
+      className={`rounded-2xl border p-5 ${accent
           ? "border-[var(--ink)] bg-[var(--ink)] text-white"
           : "border-[var(--line)] bg-white"
-      }`}
+        }`}
     >
       <p
-        className={`mb-2 text-[11px] font-semibold uppercase tracking-widest ${
-          accent ? "text-white/60" : "text-[var(--mute)]"
-        }`}
+        className={`mb-2 text-[11px] font-semibold uppercase tracking-widest ${accent ? "text-white/60" : "text-[var(--mute)]"
+          }`}
       >
         {label}
       </p>
@@ -96,11 +95,11 @@ export function Badge({
   children: React.ReactNode;
 }) {
   const styles: Record<BadgeVariant, string> = {
-    ok:      "bg-[var(--forest)]/10 text-[var(--forest)]",
+    ok: "bg-[var(--forest)]/10 text-[var(--forest)]",
     pending: "bg-[var(--lime)]/30   text-[var(--lime-ink)]",
-    danger:  "bg-[var(--blue)]/10   text-[var(--blue)]",
-    info:    "bg-[var(--grey-100)]  text-[var(--ink-soft)]",
-    lime:    "bg-[var(--lime)]      text-[var(--lime-ink)]",
+    danger: "bg-[var(--blue)]/10   text-[var(--blue)]",
+    info: "bg-[var(--grey-100)]  text-[var(--ink-soft)]",
+    lime: "bg-[var(--lime)]      text-[var(--lime-ink)]",
   };
   return (
     <span
@@ -115,27 +114,31 @@ export function Badge({
 export function Table({
   headers,
   children,
+  loading = false,
 }: {
   headers: string[];
   children: React.ReactNode;
+  loading?: boolean;
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-sm">
-        <thead>
-          <tr className="border-b border-[var(--line)] bg-[var(--grey-50)]">
-            {headers.map((h) => (
-              <th
-                key={h}
-                className="whitespace-nowrap px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-[var(--mute)]"
-              >
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>{children}</tbody>
-      </table>
+      {loading ? <TableLoader rows={headers.length} cols={6} /> :
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-[var(--line)] bg-[var(--grey-50)]">
+              {headers.map((h) => (
+                <th
+                  key={h}
+                  className="whitespace-nowrap px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-[var(--mute)]"
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>{children}</tbody>
+        </table>
+      }
     </div>
   );
 }
@@ -289,8 +292,8 @@ export function TimelineItem({
     status === "done"
       ? "bg-[var(--forest)] border-[var(--forest)]"
       : status === "active"
-      ? "bg-[var(--lime)] border-[var(--blue)] ring-4 ring-[var(--lime)]/25"
-      : "bg-white border-[var(--grey-200)]";
+        ? "bg-[var(--lime)] border-[var(--blue)] ring-4 ring-[var(--lime)]/25"
+        : "bg-white border-[var(--grey-200)]";
 
   return (
     <div className="relative pb-5 last:pb-0">
@@ -317,8 +320,8 @@ export function Toggle({
   const bg = partial
     ? "bg-gradient-to-r from-[var(--blue)] from-60% to-[var(--grey-200)] to-60%"
     : on
-    ? "bg-[var(--blue)]"
-    : "bg-[var(--grey-200)]";
+      ? "bg-[var(--blue)]"
+      : "bg-[var(--grey-200)]";
 
   const knobLeft = partial ? "left-[9px]" : on ? "left-[18px]" : "left-[2px]";
 

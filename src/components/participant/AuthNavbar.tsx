@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { HiOutlineMenuAlt3, HiOutlineX, HiOutlineUser } from "react-icons/hi";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Logo from "../ui/Logo";
 import Button from "../ui/Button";
@@ -11,9 +12,11 @@ interface AuthNavbarProps {
   userName?: string;
 }
 
-export default function AuthNavbar({ userName = "Adaeze" }: AuthNavbarProps) {
+export default function AuthNavbar({ userName = "Participant" }: AuthNavbarProps) {
   const [open, setOpen] = useState(false);
-  const { logout } = useAuth();
+  const pathname = usePathname();
+  const { profile, logout } = useAuth();
+  const isActive = (href: string) => pathname === href;
 
   return (
     <header
@@ -35,11 +38,13 @@ export default function AuthNavbar({ userName = "Adaeze" }: AuthNavbarProps) {
         <div className="hidden items-center gap-2 md:flex">
           <Link
             href="/dashboard"
-            className="
-              rounded-xl px-4 py-2
-              text-sm font-medium text-[var(--ink-soft)]
-              transition-colors hover:bg-[var(--grey-50)] hover:text-[var(--ink)]
-            "
+            className={`
+              rounded-xl px-4 py-2 text-sm font-medium transition-colors
+              ${isActive("/dashboard")
+                ? "bg-[var(--grey-50)] text-[var(--ink)]"
+                : "text-[var(--ink-soft)] hover:bg-[var(--grey-50)] hover:text-[var(--ink)]"
+              }
+            `}
           >
             Dashboard
           </Link>
@@ -54,38 +59,37 @@ export default function AuthNavbar({ userName = "Adaeze" }: AuthNavbarProps) {
             How it works
           </Link>
           <Link
-            href="/tasks"
-            className="
-              rounded-xl px-4 py-2
-              text-sm font-medium text-[var(--ink-soft)]
-              transition-colors hover:bg-[var(--grey-50)] hover:text-[var(--ink)]
-            "
-          >
-            Tasks
-          </Link>
-          <Link
             href="/voucher-detail"
-            className="
-              rounded-xl px-4 py-2
-              text-sm font-medium text-[var(--ink-soft)]
-              transition-colors hover:bg-[var(--grey-50)] hover:text-[var(--ink)]
-            "
+            className={`
+              rounded-xl px-4 py-2 text-sm font-medium transition-colors
+              ${isActive("/voucher-detail")
+                ? "bg-[var(--grey-50)] text-[var(--ink)]"
+                : "text-[var(--ink-soft)] hover:bg-[var(--grey-50)] hover:text-[var(--ink)]"
+              }
+  `}
           >
             My voucher
           </Link>
           <Button variant="ghost" onClick={logout}>Sign out</Button>
           <Link
             href="/profile"
-            className="
+            //           className={`
+            // rounded-xl px-4 py-2 text-sm font-medium transition-colors
+            // `}
+            className={`
               ml-2 flex items-center gap-2
               rounded-2xl border border-[var(--line)]
               bg-white px-4 py-2
               text-sm font-semibold text-[var(--ink)]
               transition-all hover:border-[var(--grey-200)]
-            "
+              ${isActive("/profile")
+                ? "bg-[var(--grey-50)] text-[var(--ink)]"
+                : "text-[var(--ink-soft)] hover:bg-[var(--grey-50)] hover:text-[var(--ink)]"
+              }
+            `}
           >
             <HiOutlineUser size={16} />
-            {userName}
+            {profile?.name?.split(" ")[0] || 'Participant'}
           </Link>
         </div>
 
@@ -108,7 +112,6 @@ export default function AuthNavbar({ userName = "Adaeze" }: AuthNavbarProps) {
           <div className="flex flex-col gap-1">
             {[
               { href: "/dashboard", label: "Dashboard" },
-              { href: "/tasks", label: "Tasks" },
               { href: "/voucher", label: "My voucher" },
               { href: "/how-it-works", label: "How it works" },
               { href: "/profile", label: "Profile" },
@@ -117,11 +120,13 @@ export default function AuthNavbar({ userName = "Adaeze" }: AuthNavbarProps) {
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className="
-                  rounded-xl px-4 py-3
-                  text-sm font-medium text-[var(--ink)]
-                  hover:bg-[var(--grey-50)]
-                "
+                className={`
+                  rounded-xl px-4 py-3 text-sm font-medium
+                  ${isActive(item.href)
+                    ? "bg-[var(--grey-50)] text-[var(--ink)]"
+                    : "text-[var(--ink)] hover:bg-[var(--grey-50)]"
+                  }
+                `}
               >
                 {item.label}
               </Link>

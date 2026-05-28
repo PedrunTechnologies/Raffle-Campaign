@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Button from "@/components/ui/Button";
-import { Panel, Badge, Table, Tr, Td, PageHeader } from "@/components/admin/AdminUI";
+import { Panel, Badge, Table, Tr, Td, PageHeader, KpiTile } from "@/components/admin/AdminUI";
 import { useCallback, useEffect, useState } from "react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import type { CycleRecord, CycleStatus } from "@/lib/types";
@@ -76,28 +76,19 @@ export default function CyclesPage() {
           { label: "Drafts", value: String(drafts.length) },
           { label: "Completed", value: String(completed.length) },
         ].map((s) => (
-          <div key={s.label} className="rounded-2xl border border-[var(--line)] bg-white p-4">
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-[var(--mute)]">
-              {s.label}
-            </p>
-            <p
-              className="text-3xl font-light tracking-tight"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              {loading ? "—" : s.value}
-            </p>
-          </div>
+          <KpiTile
+            key={s.label}
+            label={s.label}
+            value={loading ? "—" : s.value}
+            detail=""
+          />
         ))}
       </div>
 
       <Panel title="Cycle history" noPadding>
-        {loading ? (
-          <div className="px-5 py-10 text-center text-sm text-[var(--ink-soft)]">
-            Loading cycles…
-          </div>
-        ) : error ? (
+        {error ? (
           <div className="px-5 py-10 text-center text-sm text-[var(--blue)]">{error}</div>
-        ) : cycles.length === 0 ? (
+        ) : (!loading && cycles.length === 0) ? (
           <div className="px-5 py-10 text-center">
             <p className="mb-2 text-sm font-semibold text-[var(--ink)]">No cycles yet</p>
             <p className="mb-4 text-sm text-[var(--ink-soft)]">
@@ -108,7 +99,7 @@ export default function CyclesPage() {
             </Link>
           </div>
         ) : (
-          <Table headers={["Cycle", "Status", "Window opened", "Window closes", "Tasks", "Estimated pool", ""]}>
+          <Table loading={loading} headers={["Cycle", "Status", "Window opened", "Window closes", "Tasks", "Estimated pool", ""]}>
             {cycles.map((c) => {
               const sb = STATUS_BADGE[c.status];
               return (

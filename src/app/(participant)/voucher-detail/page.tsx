@@ -207,6 +207,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { participantGet, ParticipantFetchError } from "@/lib/participant-fetch";
 import type { VoucherRecord } from "@/lib/types";
+import { PageLoader } from "@/components/ui/Loader";
 
 function fmtTs(ts: { _seconds: number } | null | undefined): string {
   if (!ts) return "—";
@@ -261,10 +262,10 @@ function FreeVoucherCard({ voucher }: { voucher: VoucherRecord }) {
       {/* Meta grid */}
       <div className="mb-6 grid grid-cols-2 gap-3">
         {[
-          { l: "Type",    v: "Free meal"                                         },
-          { l: "Status",  v: voucher.status.charAt(0).toUpperCase() + voucher.status.slice(1) },
-          { l: "Issued",  v: fmtTs(voucher.issuedAt as unknown as { _seconds: number })       },
-          { l: "Expires", v: fmtTs(voucher.expiresAt as unknown as { _seconds: number })      },
+          { l: "Type", v: "Free meal" },
+          { l: "Status", v: voucher.status.charAt(0).toUpperCase() + voucher.status.slice(1) },
+          { l: "Issued", v: fmtTs(voucher.issuedAt as unknown as { _seconds: number }) },
+          { l: "Expires", v: fmtTs(voucher.expiresAt as unknown as { _seconds: number }) },
         ].map((row) => (
           <div key={row.l} className="rounded-xl border border-[var(--line)] bg-white p-4">
             <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-[var(--mute)]">{row.l}</p>
@@ -273,7 +274,7 @@ function FreeVoucherCard({ voucher }: { voucher: VoucherRecord }) {
         ))}
       </div>
 
-      <Link href="/">
+      <Link href="/dashboard">
         <Button variant="ghost" fullWidth>← Back to home</Button>
       </Link>
     </>
@@ -328,10 +329,10 @@ function DiscountVoucherCard({ voucher }: { voucher: VoucherRecord }) {
       {/* Meta grid */}
       <div className="mb-6 grid grid-cols-2 gap-3">
         {[
-          { l: "Discount", v: `${voucher.discountPct}% off`                          },
-          { l: "Status",   v: voucher.status.charAt(0).toUpperCase() + voucher.status.slice(1) },
-          { l: "Issued",   v: fmtTs(voucher.issuedAt  as unknown as { _seconds: number })      },
-          { l: "Expires",  v: fmtTs(voucher.expiresAt as unknown as { _seconds: number })      },
+          { l: "Discount", v: `${voucher.discountPct}% off` },
+          { l: "Status", v: voucher.status.charAt(0).toUpperCase() + voucher.status.slice(1) },
+          { l: "Issued", v: fmtTs(voucher.issuedAt as unknown as { _seconds: number }) },
+          { l: "Expires", v: fmtTs(voucher.expiresAt as unknown as { _seconds: number }) },
         ].map((row) => (
           <div key={row.l} className="rounded-xl border border-[var(--line)] bg-white p-4">
             <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-[var(--mute)]">{row.l}</p>
@@ -341,7 +342,7 @@ function DiscountVoucherCard({ voucher }: { voucher: VoucherRecord }) {
       </div>
 
       <div className="flex flex-col gap-3">
-        <Link href="/">
+        <Link href="/dashboard">
           <Button variant="ghost" fullWidth>← Back to home</Button>
         </Link>
       </div>
@@ -352,7 +353,7 @@ function DiscountVoucherCard({ voucher }: { voucher: VoucherRecord }) {
 export default function VoucherDetailPage() {
   const [voucher, setVoucher] = useState<VoucherRecord | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     participantGet<VoucherRecord[]>("/api/participant/voucher")
@@ -372,16 +373,16 @@ export default function VoucherDetailPage() {
       <main className="min-h-screen px-6 py-12 md:py-16">
         <div className="mx-auto max-w-lg">
           {loading ? (
-            <p className="text-sm text-[var(--ink-soft)]">Loading…</p>
+            <PageLoader fullPage={false} />
           ) : error ? (
             <div>
               <p className="mb-4 text-sm text-[var(--blue)]">{error}</p>
-              <Link href="/"><Button variant="ghost">← Back</Button></Link>
+              <Link href="/dashboard"><Button variant="ghost">← Back</Button></Link>
             </div>
           ) : !voucher ? (
             <div>
               <p className="mb-4 text-sm text-[var(--ink-soft)]">No voucher found.</p>
-              <Link href="/"><Button variant="ghost">← Back</Button></Link>
+              <Link href="/dashboard"><Button variant="ghost">← Back</Button></Link>
             </div>
           ) : voucher.type === "free" ? (
             <FreeVoucherCard voucher={voucher} />

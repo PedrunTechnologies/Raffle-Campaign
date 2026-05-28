@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Button from "@/components/ui/Button";
-import { Panel, Badge, Table, Tr, Td, PageHeader } from "@/components/admin/AdminUI";
+import { Panel, Badge, Table, Tr, Td, PageHeader, KpiTile } from "@/components/admin/AdminUI";
 import { useCallback, useEffect, useState } from "react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import type { TaskRecord } from "@/lib/types";
@@ -10,27 +10,27 @@ import { adminGet } from "@/lib/admin-fetch";
 
 const PLATFORM_LABELS: Record<string, string> = {
   instagram: "Instagram",
-  facebook:  "Facebook",
-  x:         "X",
-  tiktok:    "TikTok",
+  facebook: "Facebook",
+  x: "X",
+  tiktok: "TikTok",
 };
 
 const TYPE_LABELS: Record<string, string> = {
-  follow:           "Follow",
-  share:            "Share",
-  like:             "Like",
-  comment:          "Comment",
+  follow: "Follow",
+  share: "Share",
+  like: "Like",
+  comment: "Comment",
   like_and_comment: "Like & Comment",
-  repost:           "Repost",
-  tag_friends:      "Tag Friends",
-  story_share:      "Story Share",
+  repost: "Repost",
+  tag_friends: "Tag Friends",
+  story_share: "Story Share",
 };
 
 export default function TasksPage() {
   const { user } = useAdminAuth();
-  const [tasks,   setTasks]   = useState<TaskRecord[]>([]);
+  const [tasks, setTasks] = useState<TaskRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState("");
+  const [error, setError] = useState("");
 
   // useEffect(() => {
   //   if (!user) return;
@@ -45,21 +45,21 @@ export default function TasksPage() {
   // }, [user]);
 
 
-    const loadData = useCallback(async () => {
-      setLoading(true);
-      try {
-        const startedCycles = await adminGet<TaskRecord[]>("/api/admin/tasks");
-  
-        setTasks(startedCycles);
-  
-      } catch (err) {
-        console.error("[tasks] loadData:", err);
-      } finally {
-        setLoading(false);
-      }
-    }, [user]);
-  
-    useEffect(() => { loadData(); }, [loadData]);
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const startedCycles = await adminGet<TaskRecord[]>("/api/admin/tasks");
+
+      setTasks(startedCycles);
+
+    } catch (err) {
+      console.error("[tasks] loadData:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
 
   return (
@@ -76,35 +76,31 @@ export default function TasksPage() {
       {/* Summary strip */}
       <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { label: "Total tasks",        value: String(tasks.length) },
-          { label: "Active in cycle",    value: String(tasks.filter((t) => t.activeInCycle).length) },
-          { label: "Platforms covered",  value: String(new Set(tasks.map((t) => t.platform)).size) },
-          { label: "Avg cycle usage",    value: tasks.length ? String(Math.round(tasks.reduce((s, t) => s + t.cycleCount, 0) / tasks.length)) : "—" },
+          { label: "Total tasks", value: String(tasks.length) },
+          { label: "Active in cycle", value: String(tasks.filter((t) => t.activeInCycle).length) },
+          { label: "Platforms covered", value: String(new Set(tasks.map((t) => t.platform)).size) },
+          { label: "Avg cycle usage", value: tasks.length ? String(Math.round(tasks.reduce((s, t) => s + t.cycleCount, 0) / tasks.length)) : "—" },
         ].map((s) => (
-          <div key={s.label} className="rounded-2xl border border-[var(--line)] bg-white p-4">
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-[var(--mute)]">
-              {s.label}
-            </p>
-            <p className="text-3xl font-light tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
-              {loading ? "—" : s.value}
-            </p>
-          </div>
+          <KpiTile
+            key={s.label}
+            label={s.label}
+            value={loading ? "—" : s.value}
+            detail=""
+          />
         ))}
       </div>
 
       <Panel title="All tasks" noPadding>
-        {loading ? (
-          <div className="px-5 py-8 text-center text-sm text-[var(--ink-soft)]">Loading tasks…</div>
-        ) : error ? (
+        {error ? (
           <div className="px-5 py-8 text-center text-sm text-[var(--blue)]">{error}</div>
-        ) : tasks.length === 0 ? (
+        ) : (!loading && tasks.length === 0) ? (
           <div className="px-5 py-12 text-center">
             <p className="mb-2 text-sm font-semibold text-[var(--ink)]">No tasks yet</p>
             <p className="mb-4 text-sm text-[var(--ink-soft)]">Create your first task to get started.</p>
             <Link href="/admin/tasks/new"><Button>+ New task</Button></Link>
           </div>
         ) : (
-          <Table headers={["Platform", "Type", "Description", "Target URL", "Cycles", "Active", ""]}>
+          <Table loading={loading} headers={["Platform", "Type", "Description", "Target URL", "Cycles", "Active", ""]}>
             {tasks.map((task) => (
               <Tr key={task.id}>
                 <Td>

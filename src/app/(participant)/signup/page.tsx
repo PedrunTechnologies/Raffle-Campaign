@@ -61,7 +61,7 @@ export default function SignupPage() {
 
         <Input
           label="Full name"
-          placeholder="Victoria Akpan"
+          placeholder="Firstname Lastname"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
@@ -70,7 +70,7 @@ export default function SignupPage() {
         <Input
           label="Email address"
           type="email"
-          placeholder="victoria@email.com"
+          placeholder="your@email.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -79,7 +79,7 @@ export default function SignupPage() {
         <Input
           label="Phone number"
           type="tel"
-          placeholder="+234 801 234 5678"
+          placeholder="+2348012345678"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
         />

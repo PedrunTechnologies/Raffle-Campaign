@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 // import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import { Panel, Badge, Table, Tr, Td, PageHeader } from "@/components/admin/AdminUI";
+import { Panel, Badge, Table, Tr, Td, PageHeader, KpiTile } from "@/components/admin/AdminUI";
 import { VendorRecord } from "@/lib/types";
 import { adminGet, AdminFetchError } from "@/lib/admin-fetch";
 
@@ -88,26 +88,24 @@ export default function VendorsPage() {
           { label: "Onboarding", value: String(pending) },
           { label: "Suspended", value: String(suspended) },
         ].map((s) => (
-          <div key={s.label} className="rounded-2xl border border-[var(--line)] bg-white p-4">
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-[var(--mute)]">{s.label}</p>
-            <p className="text-3xl font-light tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
-              {loading ? "—" : s.value}
-            </p>
-          </div>
+          <KpiTile
+            key={s.label}
+            label={s.label}
+            value={loading ? "—" : s.value}
+            detail=""
+          />
         ))}
       </div>
 
 
       <Panel title="All vendors" noPadding>
-        {loading ? (
-          <div className="px-5 py-10 text-center text-sm text-[var(--ink-soft)]">Loading vendors…</div>
-        ) : vendors.length === 0 ? (
+        {(!loading && vendors.length === 0) ? (
           <div className="px-5 py-14 text-center">
             <p className="mb-1 text-sm font-semibold text-[var(--ink)]">No vendors yet</p>
             <p className="text-sm text-[var(--ink-soft)]">Approved vendors appear here after applying.</p>
           </div>
         ) : (
-          <Table headers={["Vendor", "Location", "Business type", "Cycles", "Status", ""]}>
+          <Table loading={loading} headers={["Vendor", "Location", "Business type", "Cycles", "Status", ""]}>
             {vendors.map((v) => {
               const sb = STATUS_BADGE[v.status] ?? { variant: "info" as const, label: v.status };
               return (

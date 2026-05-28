@@ -86,6 +86,7 @@ function CycleControlContent() {
   const [cycle, setCycle] = useState<CycleRecord | null>(null);
   const [allTasks, setAllTasks] = useState<TaskRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingModal, setLoadingModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [modal, setModal] = useState<ModalAction>(null);
   const [actionErr, setActionErr] = useState("");
@@ -192,11 +193,14 @@ function CycleControlContent() {
     setActionErr("");
 
     try {
+      setLoadingModal(true);
       await adminPost(`/api/admin/cycles/${cycle.id}/${action}`, {});
       setModal(null);
       await loadData();
     } catch (err) {
       setActionErr(err instanceof AdminFetchError ? err.message : "Network error. Try again.");
+    } finally {
+      setLoadingModal(false);
     }
   }
 
@@ -533,6 +537,7 @@ function CycleControlContent() {
               </button>
               <button
                 onClick={() => handleAction(modal)}
+                disabled={loadingModal}
                 className={`
                   flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors
                   ${modal === "start"
@@ -541,7 +546,7 @@ function CycleControlContent() {
                   }
                 `}
               >
-                {modal === "start" ? "Start cycle" : "Close cycle"}
+                {loadingModal ? "Loading..." : (modal === "start" ? "Start cycle" : "Close cycle")}
               </button>
             </div>
           </div>

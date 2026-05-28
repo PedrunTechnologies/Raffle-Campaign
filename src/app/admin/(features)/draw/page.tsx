@@ -36,13 +36,6 @@ export default function TriggerDrawPage() {
   const [running,   setRunning]   = useState(false);
   const [drawError, setDrawError] = useState("");
   const [result,    setResult]    = useState<DrawResult | null>(null);
-
-
-
-
-
-
-
   const [wrongPw, setWrongPw] = useState(false);
   const [stats, setStats] = useState<{
     eligibleUsers: number;
@@ -50,12 +43,6 @@ export default function TriggerDrawPage() {
     qualifiedSubmissions: number;
     estimatedPayout: number;
   } | null>(null);
-
-
-
-
-
-
 
 
   /* ── load active cycle ─────────────────────────────────────────── */
@@ -111,19 +98,6 @@ export default function TriggerDrawPage() {
       setRunning(false);
     }
   }
-
-
-  
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -225,25 +199,10 @@ export default function TriggerDrawPage() {
               ))}
             </div>
 
-            {/* Winner codes */}
-            <div className="mb-4">
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-[var(--forest)]">
-                Winner voucher{result.winnerCodes.length > 1 ? "s" : ""}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {result.winnerCodes.map((code) => (
-                  <span
-                    key={code}
-                    className="rounded-lg bg-[var(--lime)] px-3 py-1.5 font-mono text-xs font-semibold text-[var(--lime-ink)]"
-                  >
-                    {code}
-                  </span>
-                ))}
-              </div>
-            </div>
+
 
             <p className="text-sm text-[var(--ink-soft)]">
-              Winner{result.winnerCodes.length > 1 ? "s" : ""} notified via push notification.
+              Participants will be notified via push notification.
               All other participants received a discount code. Vendor redemption window is now open.
             </p>
           </div>
@@ -260,8 +219,6 @@ export default function TriggerDrawPage() {
       </>
     );
   }
-
-  
 
 
   /* ── vendor opt-in summary from cycle ─────────────────────────── */

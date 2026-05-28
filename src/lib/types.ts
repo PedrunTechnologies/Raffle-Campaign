@@ -149,6 +149,7 @@ export interface VoucherRecord {
   discountPct:   number | null;
   status:        "issued" | "eligible" | "redeemed" | "expired";
   vendorId:      string | null;
+  vendorName?:      string | null;
   issuedAt:      Timestamp;
   expiresAt:     Timestamp;
   redeemedAt:    Timestamp | null;
