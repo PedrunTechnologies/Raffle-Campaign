@@ -31,6 +31,7 @@ export interface UserProfile {
   photoURL:     string | null;
   role:         "participant";
   socials:      Partial<Record<SocialPlatform, SocialLink>>;
+  fcmTokens:    string[];       // FCM device tokens for push notifications
   createdAt:    Timestamp;
   updatedAt:    Timestamp;
 }
@@ -149,3 +150,4 @@ export async function removeSocialLink(uid: string, platform: SocialPlatform) {
     updatedAt:               serverTimestamp(),
   });
 }
+

@@ -41,7 +41,7 @@ function useCountdown(targetTs: { _seconds: number } | null | undefined) {
 }
 
 
-/* ── task list — shared between tasks_pending and voucher_issued ──────── */
+/* ── task list ──────── */
 
 function TaskList({
   cycle,
@@ -152,14 +152,15 @@ function TaskList({
 }
 
 /* ── screens ─────────────────────────────────────────────────────────── */
-
 function TasksPending({
   cycle,
   tasks,
+  qualified,
   onTaskDone,
 }: {
   cycle: CycleRecord;
   tasks: (TaskRecord & { completed: boolean })[];
+  qualified: boolean;
   onTaskDone: (taskId: string) => Promise<void>;
 }) {
   return (
@@ -172,11 +173,17 @@ function TasksPending({
           Complete tasks.{" "}
           <em className="italic text-[var(--blue)]">Get your voucher.</em>
         </h1>
-        <p className="mt-2 text-sm text-[var(--ink-soft)]">
-          Complete at least {cycle.minTasksToQualify} task
-          {cycle.minTasksToQualify !== 1 ? "s" : ""} to qualify.
+        {qualified ? (
+          <p className="mt-2 text-sm font-medium text-[var(--forest)]">
+            ✓ You qualify for the draw. Keep completing tasks to improve your chances.
+          </p>
+        ) : (
+          <p className="mt-2 text-sm text-[var(--ink-soft)]">
+            Complete at least {cycle.minTasksToQualify} task
+            {cycle.minTasksToQualify !== 1 ? "s" : ""} to qualify for the draw. 
           More tasks increase your chances.
-        </p>
+          </p>
+        )}
       </div>
       <TaskList cycle={cycle} tasks={tasks} onTaskDone={onTaskDone} />
     </div>
@@ -268,6 +275,13 @@ function DrawDone({ voucher }: { voucher: VoucherRecord }) {
         <p className="mb-6 text-sm text-[var(--ink-soft)]">
           Your voucher has been redeemed. Good luck in the next cycle!
         </p>
+        <div className="mb-6">
+          {
+          voucher.type === "free" ?
+          <RaffleVoucherCard voucher={voucher} />:
+          <DiscountVoucherCard voucher={voucher} />
+        }
+        </div>
         <Link href="/profile">
           <Button variant="ghost" fullWidth>View history</Button>
         </Link>
@@ -378,9 +392,9 @@ function Cooldown({
         </div>
       )}
 
-      <Link href="/closed">
+      {/* <Link href="/closed">
         <Button variant="ghost" fullWidth>Notify me when it opens</Button>
-      </Link>
+      </Link> */}
     </div>
   );
 }
@@ -393,28 +407,47 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // const load = useCallback(async () => {
+  //   try {
+  //     const me = await participantGet<ParticipantDashboardData>("/api/participant/me");
+  //     setData(me);
+
+  //     // Load tasks whenever there's an active cycle
+  //     // (needed for both tasks_pending AND voucher_issued states)
+  //     if (
+  //       me.cycleState.status === "tasks_pending" ||
+  //       me.cycleState.status === "voucher_issued"
+  //     ) {
+  //       const taskDetails = await participantGet<(TaskRecord & { completed: boolean })[]>(
+  //         "/api/participant/tasks?current=true"
+  //       );
+  //       setTasks(taskDetails);
+  //     }
+  //   } catch (err) {
+  //     if (err instanceof ParticipantFetchError && err.status === 401) {
+  //       window.location.href = "/login";
+  //     } else {
+  //       setError("Failed to load. Please refresh.");
+  //     }
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }, []);
+
   const load = useCallback(async () => {
     try {
       const me = await participantGet<ParticipantDashboardData>("/api/participant/me");
       setData(me);
 
-      // Load tasks whenever there's an active cycle
-      // (needed for both tasks_pending AND voucher_issued states)
-      if (
-        me.cycleState.status === "tasks_pending" ||
-        me.cycleState.status === "voucher_issued"
-      ) {
+      // Load tasks while the draw hasn't run yet
+      if (me.cycleState.status === "tasks_pending") {
         const taskDetails = await participantGet<(TaskRecord & { completed: boolean })[]>(
           "/api/participant/tasks?current=true"
         );
         setTasks(taskDetails);
       }
     } catch (err) {
-      if (err instanceof ParticipantFetchError && err.status === 401) {
-        window.location.href = "/login";
-      } else {
-        setError("Failed to load. Please refresh.");
-      }
+      setError("Failed to load. Please refresh.");
     } finally {
       setLoading(false);
     }
@@ -462,7 +495,7 @@ export default function HomePage() {
   return (
     <>
       <AuthNavbar userName={data?.profile?.displayName?.split(" ")[0]} />
-      <main className="min-h-screen px-6 py-12 md:py-16">
+      {/* <main className="min-h-screen px-6 py-12 md:py-16">
         {cycleState.status === "tasks_pending" && (
           <TasksPending
             cycle={cycleState.cycle}
@@ -487,12 +520,28 @@ export default function HomePage() {
             lastVoucher={cycleState.status === "cooldown" ? cycleState.lastVoucher : null}
           />
         )}
+      </main> */}
+      <main className="min-h-screen px-6 py-12 md:py-16">
+        {cycleState.status === "tasks_pending" && (
+          <TasksPending
+            cycle={cycleState.cycle}
+            tasks={tasks}
+            qualified={cycleState.qualified}
+            onTaskDone={markTaskDone}
+          />
+        )}
+        {cycleState.status === "draw_done" && (
+          <DrawDone voucher={cycleState.voucher} />
+        )}
+        {(cycleState.status === "cooldown" || cycleState.status === "no_cycle") && (
+          <Cooldown
+            nextCycleAt={cycleState.status === "cooldown" ? cycleState.nextCycleAt : null}
+            lastVoucher={cycleState.status === "cooldown" ? cycleState.lastVoucher : null}
+          />
+        )}
       </main>
     </>
   );
 }
-
-
-
 
 

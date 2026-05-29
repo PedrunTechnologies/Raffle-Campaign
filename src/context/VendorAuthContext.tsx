@@ -9,17 +9,17 @@ import { auth } from "@/lib/firebase";
 import type { VendorRecord } from "@/lib/types";
 
 interface VendorAuthContextValue {
-  user:    User | null;
-  vendor:  VendorRecord | null;
+  user: User | null;
+  vendor: VendorRecord | null;
   loading: boolean;
-  logout:  () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const VendorAuthContext = createContext<VendorAuthContextValue | null>(null);
 
 export function VendorAuthProvider({ children }: { children: ReactNode }) {
-  const [user,    setUser]    = useState<User | null>(null);
-  const [vendor,  setVendor]  = useState<VendorRecord | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [vendor, setVendor] = useState<VendorRecord | null>(null);
   const [loading, setLoading] = useState(true);
 
 
@@ -43,14 +43,15 @@ export function VendorAuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
+      console.log(u);
       setUser(u);
       // if (u) await loadVendor(u);
       // else setVendor(null);
-              if (u) {
-          await loadVendor(u);
-        } else {
-          setVendor(null);
-        }
+      if (u) {
+        await loadVendor(u);
+      } else {
+        setVendor(null);
+      }
       setLoading(false);
     });
     return unsub;

@@ -178,7 +178,7 @@ export default function VendorLoginPage() {
           )}
 
           <div className="flex flex-col gap-3">
-            <Button fullWidth disabled={loading}>
+            <Button type="submit" fullWidth disabled={loading}>
               {loading ? "Signing in…" : "Sign in"}
             </Button>
           </div>

@@ -1,124 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase-admin";
 import { requireAdmin } from "@/lib/require-admin";
-import { FieldValue } from "firebase-admin/firestore";
 import type { CycleRecord, DrawLogRecord, VoucherRecord } from "@/lib/types";
+import { notifyParticipantsDrawDone, notifyVendorsDrawDone } from "@/lib/fcm";
 
-// export async function POST(req: NextRequest) {
-//   const result = await requireAdmin(req);
-//   if ("error" in result) return result.error;
-
-//   /* ── 1. Find the active cycle ─────────────────────────────────── */
-//   const activeSnap = await adminDb
-//     .collection("cycles")
-//     .where("status", "==", "started")
-//     .limit(1)
-//     .get();
-
-//   if (activeSnap.empty) {
-//     return NextResponse.json(
-//       { error: "No started cycle found. Start a cycle before running the draw." },
-//       { status: 409 }
-//     );
-//   }
-
-//   const cycleDoc  = activeSnap.docs[0];
-//   const cycle     = cycleDoc.data() as CycleRecord;
-
-//   /* ── 2. Guard: draw already run for this cycle ────────────────── */
-//   if (cycle.drawLogId) {
-//     return NextResponse.json(
-//       { error: `Draw already completed for cycle #${cycle.cycleNumber}. Close the cycle first.` },
-//       { status: 409 }
-//     );
-//   }
-
-//   /* ── 3. Snapshot all eligible vouchers ───────────────────────── */
-//   const vouchersSnap = await adminDb
-//     .collection("vouchers")
-//     .where("cycleId", "==", cycle.id)
-//     .where("status",  "==", "eligible")
-//     .get();
-
-//   const eligible = vouchersSnap.docs.map((d) => d.data() as VoucherRecord);
-//   const pool     = eligible.length;
-
-//   if (pool === 0) {
-//     return NextResponse.json(
-//       { error: "No eligible vouchers in the pool. Cannot run the draw." },
-//       { status: 409 }
-//     );
-//   }
-
-//   /* ── 4. Cryptographic random selection ───────────────────────── */
-//   const winnersCount  = Math.min(1, pool);
-//   const shuffled      = cryptoShuffle([...eligible]);
-//   const winners       = shuffled.slice(0, winnersCount);
-//   const nonWinners    = shuffled.slice(winnersCount);
-//   const winnerCodes   = winners.map((v) => v.code);
-
-//   /* ── 5. Write results in a batch ─────────────────────────────── */
-//   const logRef = adminDb.collection("drawLogs").doc();
-
-//   const log: Omit<DrawLogRecord, "executedAt"> & { executedAt: unknown } = {
-//     id:           logRef.id,
-//     cycleId:      cycle.id,
-//     cycleNumber:  cycle.cycleNumber,
-//     triggeredBy:  result.admin.uid,
-//     triggeredByName: result.admin.displayName,
-//     eligiblePool: pool,
-//     // winnersCount,
-//     // winnerCodes,
-//     status:       "completed",
-//     executedAt:   FieldValue.serverTimestamp(),
-
-
-//       voucherCodes:    string[]; 
-//       freeCodes:       string[];
-//       discountCodes:   string[];
-//       errorMessage?:   string;
-//   };
-
-//   const batch = adminDb.batch();
-
-//   /* Write the draw log */
-//   batch.set(logRef, log);
-
-//   /* Update cycle with drawLogId (but keep as "started" — admin closes manually) */
-//   batch.update(cycleDoc.ref, {
-//     drawLogId:  logRef.id,
-//     updatedAt:  FieldValue.serverTimestamp(),
-//   });
-
-//   /* Mark winner vouchers as "won" */
-//   for (const winner of winners) {
-//     const ref = adminDb.collection("vouchers").doc(winner.code);
-//     batch.update(ref, {
-//       status:      "won",
-//       updatedAt:   FieldValue.serverTimestamp(),
-//     });
-//   }
-
-//   /* Mark non-winner vouchers as "discount" (keep eligible → discount path) */
-//   for (const loser of nonWinners) {
-//     const ref = adminDb.collection("vouchers").doc(loser.code);
-//     batch.update(ref, {
-//       status:    "discount",
-//       updatedAt: FieldValue.serverTimestamp(),
-//     });
-//   }
-
-//   await batch.commit();
-
-//   return NextResponse.json({
-//     ok:          true,
-//     drawLogId:   logRef.id,
-//     cycleNumber: cycle.cycleNumber,
-//     pool,
-//     winnersCount,
-//     winnerCodes,
-//   });
-// }
 
 
 export async function POST(req: NextRequest) {
@@ -145,24 +31,40 @@ export async function POST(req: NextRequest) {
   /* ── 2. Guard: draw already run for this cycle ────────────────── */
   if (cycle.drawLogId) {
     return NextResponse.json(
-      { error: `Draw already completed for cycle #${cycle.cycleNumber}. Close the cycle first.` },
+      { error: `Draw already completed for cycle #${cycle.cycleNumber}.` },
       { status: 409 }
     );
   }
 
-  /* ── 3. Snapshot all eligible vouchers (participants) ─────────── */
-  const vouchersSnap = await adminDb
-    .collection("vouchers")
+  /* ── 3. Find all qualifying participants from taskSubmissions ─── */
+  //
+  // Group submissions by participantId, keep those with count ≥ minTasksToQualify.
+  // This is the source of truth — no pre-existing voucher docs needed.
+
+  const submissionsSnap = await adminDb
+    .collection("taskSubmissions")
     .where("cycleId", "==", cycle.id)
-    .where("status", "==", "eligible")
     .get();
 
-  const eligible = vouchersSnap.docs.map((d) => d.data() as VoucherRecord);
-  const pool = eligible.length;
+  // Count distinct tasks per participant
+  const taskCountByParticipant = new Map<string, Set<string>>();
+  for (const doc of submissionsSnap.docs) {
+    const { participantId, taskId } = doc.data() as { participantId: string; taskId: string };
+    if (!taskCountByParticipant.has(participantId)) {
+      taskCountByParticipant.set(participantId, new Set());
+    }
+    taskCountByParticipant.get(participantId)!.add(taskId);
+  }
+
+  const qualifyingParticipantIds = [...taskCountByParticipant.entries()]
+    .filter(([, tasks]) => tasks.size >= cycle.minTasksToQualify)
+    .map(([uid]) => uid);
+
+  const pool = qualifyingParticipantIds.length;
 
   if (pool === 0) {
     return NextResponse.json(
-      { error: "No eligible vouchers in the pool. Cannot run the draw." },
+      { error: "No participants have completed the minimum tasks. Cannot run the draw." },
       { status: 409 }
     );
   }
@@ -170,11 +72,12 @@ export async function POST(req: NextRequest) {
   /* ── 4. Build the prize pool from vendorOptIns ────────────────── */
   //
   // Each vendorOptIn contributes:
-  //   - freeVouchers × { type: "free" }
+  //   - freeVouchers  × { type: "free" }
   //   - discountTiers × { type: "discount", discountPct, dineInAvailable, dineInUntil }
   //
-  // Prizes are ordered: free first, then tiers lowest→highest discount,
-  // so the shuffle is what randomises who gets what — not the order here.
+  // Free prizes first, then tiers sorted ascending — the shuffle (step 5)
+  // determines who gets which prize; the luckiest participants drawn earliest
+  // receive free meals.
 
   type Prize =
     | { type: "free"; vendorId: string; vendorName: string }
@@ -185,13 +88,10 @@ export async function POST(req: NextRequest) {
   for (const optIn of cycle.vendorOptIns ?? []) {
     const { vendorId, vendorName, freeVouchers = 0, discountTiers = [] } = optIn;
 
-    // Free vouchers
     for (let i = 0; i < freeVouchers; i++) {
       prizePool.push({ type: "free", vendorId, vendorName });
     }
 
-    // Discount tiers — sort ascending so lower discounts are assigned first
-    // (winners drawn first get the bigger prizes via the shuffle, see step 5)
     const sortedTiers = [...discountTiers].sort((a, b) => a.percentage - b.percentage);
     for (const tier of sortedTiers) {
       for (let i = 0; i < tier.quantity; i++) {
@@ -216,29 +116,34 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  /* ── 5. Shuffle participants, then assign prizes in order ─────── */
-  //
-  // Shuffle the eligible participants — the first `totalPrizes` participants
-  // are winners; the rest receive no prize this cycle.
-  // The prize pool itself is NOT shuffled: free prizes go first, then tiers.
-  // This means the luckiest participants (drawn earliest) get free meals.
+  /* ── 5. Shuffle participants, zip against prize pool ──────────── */
+  const shuffled = cryptoShuffle([...qualifyingParticipantIds]);
+  const prizeWinners = shuffled.slice(0, totalPrizes);   // get a prize
+  const noPrize = shuffled.slice(totalPrizes);       // participated but no prize
 
-  const shuffledParticipants = cryptoShuffle([...eligible]);
-  const prizeWinners = shuffledParticipants.slice(0, totalPrizes);
-  const noPrize = shuffledParticipants.slice(totalPrizes);
+  const assignments = prizeWinners.map((uid, i) => ({ uid, prize: prizePool[i] }));
 
-  // Pair each winner with their prize
-  const assignments = prizeWinners.map((voucher, i) => ({
-    voucher,
-    prize: prizePool[i],
-  }));
+  /* ── 6. Voucher expiry — end of cooldown window ───────────────── */
+  const windowCloseMs =
+    (cycle.windowClose as unknown as { _seconds: number })._seconds * 1000;
+  const expiresAt = new Date(windowCloseMs + cycle.cooldownHours * 60 * 60 * 1000);
 
-  /* ── 6. Categorise for the draw log ──────────────────────────── */
-  const freeCodes = assignments.filter((a) => a.prize.type === "free").map((a) => a.voucher.code);
-  const discountCodes = assignments.filter((a) => a.prize.type === "discount").map((a) => a.voucher.code);
-  const voucherCodes = [...freeCodes, ...discountCodes]; // all distributed (free + discount)
+  /* ── 7. Categorise codes for the draw log ─────────────────────── */
+  const freeCodes: string[] = [];
+  const discountCodes: string[] = [];
 
-  /* ── 7. Write results in a batch ─────────────────────────────── */
+  // Generate all codes up front so we can populate the log
+  const assignmentsWithCodes = assignments.map(({ uid, prize }) => {
+    const code = generateVoucherCode();
+    if (prize.type === "free") freeCodes.push(code);
+    else discountCodes.push(code);
+    return { uid, prize, code };
+  });
+
+  const noPrizeCodes = noPrize.map(() => generateVoucherCode()); // codes for no-prize records
+  const voucherCodes = [...freeCodes, ...discountCodes];
+
+  /* ── 8. Write everything in a single batch ────────────────────── */
   const logRef = adminDb.collection("drawLogs").doc();
 
   const log: Omit<DrawLogRecord, "executedAt"> & { executedAt: unknown } = {
@@ -255,59 +160,81 @@ export async function POST(req: NextRequest) {
     executedAt: FieldValue.serverTimestamp(),
   };
 
+  // Firestore batch limit is 500 ops; for large cycles use BulkWriter instead.
+  // Each participant = 1 voucher set = 1 op. Log + cycle update = 2 ops.
+  // Safe up to ~498 participants per batch.
   const batch = adminDb.batch();
 
-  /* Write the draw log */
   batch.set(logRef, log);
 
-  /* Update cycle with drawLogId (keep as "started" — admin closes manually) */
   batch.update(cycleDoc.ref, {
     drawLogId: logRef.id,
     updatedAt: FieldValue.serverTimestamp(),
   });
 
-  /* Update winner vouchers with their assigned prize */
-  for (const { voucher, prize } of assignments) {
-    const ref = adminDb.collection("vouchers").doc(voucher.code);
+  /* Create won vouchers */
+  for (const { uid, prize, code } of assignmentsWithCodes) {
+    const ref = adminDb.collection("vouchers").doc(code);
 
-    const expiresAt = new Date(
-      Date.now() + cycle.cooldownHours * 60 * 60 * 1000
-    );
+    const base = {
+      code,
+      cycleId: cycle.id,
+      participantId: uid,
+      status: "won",
+      expiresAt,
+      issuedAt: FieldValue.serverTimestamp(),
+      redeemedAt: null,
+    };
 
     if (prize.type === "free") {
-      batch.update(ref, {
-        status: "won",
+      batch.set(ref, {
+        ...base,
         type: "free",
+        discountPct: null,
         vendorId: prize.vendorId,
         vendorName: prize.vendorName,
-        expiresAt,
-        updatedAt: FieldValue.serverTimestamp(),
-      });
+      } satisfies Omit<VoucherRecord, "issuedAt" | "expiresAt" | "status"> & { issuedAt: unknown; expiresAt: unknown; "status": unknown });
     } else {
-      batch.update(ref, {
-        status: "won",
+      batch.set(ref, {
+        ...base,
         type: "discount",
         discountPct: prize.discountPct,
-        dineInAvailable: prize.dineInAvailable,
-        dineInUntil: prize.dineInUntil,
         vendorId: prize.vendorId,
         vendorName: prize.vendorName,
-        expiresAt,
-        updatedAt: FieldValue.serverTimestamp(),
-      });
+        dineInAvailable: prize.dineInAvailable,
+        dineInUntil: prize.dineInUntil,
+      } satisfies Omit<VoucherRecord, "issuedAt" | "expiresAt" | "dineInAvailable" | "dineInUntil" | "status"> & { issuedAt: unknown; expiresAt: unknown; dineInAvailable: unknown; "dineInUntil": unknown; "status": unknown });
     }
   }
 
-  /* Mark participants without a prize */
-  for (const voucher of noPrize) {
-    const ref = adminDb.collection("vouchers").doc(voucher.code);
-    batch.update(ref, {
+  /* Create no-prize vouchers (participant can see they were in the draw) */
+  for (let i = 0; i < noPrize.length; i++) {
+    const uid = noPrize[i];
+    const code = noPrizeCodes[i];
+    const ref = adminDb.collection("vouchers").doc(code);
+
+    batch.set(ref, {
+      code,
+      cycleId: cycle.id,
+      participantId: uid,
+      type: null,
+      discountPct: null,
       status: "no_prize",
-      updatedAt: FieldValue.serverTimestamp(),
-    });
+      vendorId: null,
+      vendorName: null,
+      issuedAt: FieldValue.serverTimestamp(),
+      expiresAt,
+      redeemedAt: null,
+    } satisfies Omit<VoucherRecord, "issuedAt" | "expiresAt"> & { issuedAt: unknown; expiresAt: unknown });
   }
 
   await batch.commit();
+
+    /* Fire push notifications — non-blocking, never fail the response */
+  void Promise.allSettled([
+    notifyParticipantsDrawDone(cycle.cycleNumber),
+    notifyVendorsDrawDone(cycle.cycleNumber),
+  ]);
 
   return NextResponse.json({
     ok: true,
@@ -318,6 +245,410 @@ export async function POST(req: NextRequest) {
     freeCodes,
     discountCodes,
   });
+}
+
+
+
+
+// export async function POST(req: NextRequest) {
+
+
+
+//   /* ── 2. Guard: draw already run for this cycle ────────────────── */
+//   if (cycle.drawLogId) {
+//     return NextResponse.json(
+//       { error: `Draw already completed for cycle #${cycle.cycleNumber}. Close the cycle first.` },
+//       { status: 409 }
+//     );
+//   }
+
+//   /* ── 3. Snapshot all eligible vouchers (participants) ─────────── */
+//   const vouchersSnap = await adminDb
+//     .collection("vouchers")
+//     .where("cycleId", "==", cycle.id)
+//     .where("status", "==", "eligible")
+//     .get();
+
+//   const eligible = vouchersSnap.docs.map((d) => d.data() as VoucherRecord);
+//   const pool = eligible.length;
+
+//   if (pool === 0) {
+//     return NextResponse.json(
+//       { error: "No eligible vouchers in the pool. Cannot run the draw." },
+//       { status: 409 }
+//     );
+//   }
+
+//   /* ── 4. Build the prize pool from vendorOptIns ────────────────── */
+//   //
+//   // Each vendorOptIn contributes:
+//   //   - freeVouchers × { type: "free" }
+//   //   - discountTiers × { type: "discount", discountPct, dineInAvailable, dineInUntil }
+//   //
+//   // Prizes are ordered: free first, then tiers lowest→highest discount,
+//   // so the shuffle is what randomises who gets what — not the order here.
+
+//   type Prize =
+//     | { type: "free"; vendorId: string; vendorName: string }
+//     | { type: "discount"; vendorId: string; vendorName: string; discountPct: number; dineInAvailable: string; dineInUntil: string };
+
+//   const prizePool: Prize[] = [];
+
+//   for (const optIn of cycle.vendorOptIns ?? []) {
+//     const { vendorId, vendorName, freeVouchers = 0, discountTiers = [] } = optIn;
+
+//     // Free vouchers
+//     for (let i = 0; i < freeVouchers; i++) {
+//       prizePool.push({ type: "free", vendorId, vendorName });
+//     }
+
+//     // Discount tiers — sort ascending so lower discounts are assigned first
+//     // (winners drawn first get the bigger prizes via the shuffle, see step 5)
+//     const sortedTiers = [...discountTiers].sort((a, b) => a.percentage - b.percentage);
+//     for (const tier of sortedTiers) {
+//       for (let i = 0; i < tier.quantity; i++) {
+//         prizePool.push({
+//           type: "discount",
+//           vendorId,
+//           vendorName,
+//           discountPct: tier.percentage,
+//           dineInAvailable: tier.dineInAvailable,
+//           dineInUntil: tier.dineInUntil,
+//         });
+//       }
+//     }
+//   }
+
+//   const totalPrizes = prizePool.length;
+
+//   if (totalPrizes === 0) {
+//     return NextResponse.json(
+//       { error: "Cycle has no prizes configured (empty vendorOptIns). Cannot run the draw." },
+//       { status: 409 }
+//     );
+//   }
+
+//   /* ── 5. Shuffle participants, then assign prizes in order ─────── */
+//   //
+//   // Shuffle the eligible participants — the first `totalPrizes` participants
+//   // are winners; the rest receive no prize this cycle.
+//   // The prize pool itself is NOT shuffled: free prizes go first, then tiers.
+//   // This means the luckiest participants (drawn earliest) get free meals.
+
+//   const shuffledParticipants = cryptoShuffle([...eligible]);
+//   const prizeWinners = shuffledParticipants.slice(0, totalPrizes);
+//   const noPrize = shuffledParticipants.slice(totalPrizes);
+
+//   // Pair each winner with their prize
+//   const assignments = prizeWinners.map((voucher, i) => ({
+//     voucher,
+//     prize: prizePool[i],
+//   }));
+
+//   /* ── 6. Categorise for the draw log ──────────────────────────── */
+//   const freeCodes = assignments.filter((a) => a.prize.type === "free").map((a) => a.voucher.code);
+//   const discountCodes = assignments.filter((a) => a.prize.type === "discount").map((a) => a.voucher.code);
+//   const voucherCodes = [...freeCodes, ...discountCodes]; // all distributed (free + discount)
+
+//   /* ── 7. Write results in a batch ─────────────────────────────── */
+//   const logRef = adminDb.collection("drawLogs").doc();
+
+//   const log: Omit<DrawLogRecord, "executedAt"> & { executedAt: unknown } = {
+//     id: logRef.id,
+//     cycleId: cycle.id,
+//     cycleNumber: cycle.cycleNumber,
+//     triggeredBy: result.admin.uid,
+//     triggeredByName: result.admin.displayName,
+//     eligiblePool: pool,
+//     voucherCodes,
+//     freeCodes,
+//     discountCodes,
+//     status: "completed",
+//     executedAt: FieldValue.serverTimestamp(),
+//   };
+
+//   const batch = adminDb.batch();
+
+//   /* Write the draw log */
+//   batch.set(logRef, log);
+
+//   /* Update cycle with drawLogId (keep as "started" — admin closes manually) */
+//   batch.update(cycleDoc.ref, {
+//     drawLogId: logRef.id,
+//     updatedAt: FieldValue.serverTimestamp(),
+//   });
+
+//   /* Update winner vouchers with their assigned prize */
+//   for (const { voucher, prize } of assignments) {
+//     const ref = adminDb.collection("vouchers").doc(voucher.code);
+
+//     const expiresAt = new Date(
+//       Date.now() + cycle.cooldownHours * 60 * 60 * 1000
+//     );
+
+//     if (prize.type === "free") {
+//       batch.update(ref, {
+//         status: "won",
+//         type: "free",
+//         vendorId: prize.vendorId,
+//         vendorName: prize.vendorName,
+//         expiresAt,
+//         updatedAt: FieldValue.serverTimestamp(),
+//       });
+//     } else {
+//       batch.update(ref, {
+//         status: "won",
+//         type: "discount",
+//         discountPct: prize.discountPct,
+//         dineInAvailable: prize.dineInAvailable,
+//         dineInUntil: prize.dineInUntil,
+//         vendorId: prize.vendorId,
+//         vendorName: prize.vendorName,
+//         expiresAt,
+//         updatedAt: FieldValue.serverTimestamp(),
+//       });
+//     }
+//   }
+
+//   /* Mark participants without a prize */
+//   for (const voucher of noPrize) {
+//     const ref = adminDb.collection("vouchers").doc(voucher.code);
+//     batch.update(ref, {
+//       status: "no_prize",
+//       updatedAt: FieldValue.serverTimestamp(),
+//     });
+//   }
+
+//   await batch.commit();
+
+//   /* Fire push notifications — non-blocking, never fail the response */
+//   void Promise.allSettled([
+//     notifyParticipantsDrawDone(cycle.cycleNumber),
+//     notifyVendorsDrawDone(cycle.cycleNumber),
+//   ]);
+
+//   return NextResponse.json({
+//     ok: true,
+//     drawLogId: logRef.id,
+//     cycleNumber: cycle.cycleNumber,
+//     eligiblePool: pool,
+//     voucherCodes,
+//     freeCodes,
+//     discountCodes,
+//   });
+// }
+
+
+ /* ── seperate ─────────────────────────────────── */
+
+
+// export async function POST(req: NextRequest) {
+//   const result = await requireAdmin(req);
+//   if ("error" in result) return result.error;
+
+//   /* ── 1. Find the active cycle ─────────────────────────────────── */
+//   const activeSnap = await adminDb
+//     .collection("cycles")
+//     .where("status", "==", "started")
+//     .limit(1)
+//     .get();
+
+//   if (activeSnap.empty) {
+//     return NextResponse.json(
+//       { error: "No started cycle found. Start a cycle before running the draw." },
+//       { status: 409 }
+//     );
+//   }
+
+//   const cycleDoc = activeSnap.docs[0];
+//   const cycle = cycleDoc.data() as CycleRecord;
+
+//   /* ── 2. Guard: draw already run for this cycle ────────────────── */
+//   if (cycle.drawLogId) {
+//     return NextResponse.json(
+//       { error: `Draw already completed for cycle #${cycle.cycleNumber}. Close the cycle first.` },
+//       { status: 409 }
+//     );
+//   }
+
+//   /* ── 3. Snapshot all eligible vouchers (participants) ─────────── */
+//   const vouchersSnap = await adminDb
+//     .collection("vouchers")
+//     .where("cycleId", "==", cycle.id)
+//     .where("status", "==", "eligible")
+//     .get();
+
+//   const eligible = vouchersSnap.docs.map((d) => d.data() as VoucherRecord);
+//   const pool = eligible.length;
+
+//   if (pool === 0) {
+//     return NextResponse.json(
+//       { error: "No eligible vouchers in the pool. Cannot run the draw." },
+//       { status: 409 }
+//     );
+//   }
+
+//   /* ── 4. Build the prize pool from vendorOptIns ────────────────── */
+//   //
+//   // Each vendorOptIn contributes:
+//   //   - freeVouchers × { type: "free" }
+//   //   - discountTiers × { type: "discount", discountPct, dineInAvailable, dineInUntil }
+//   //
+//   // Prizes are ordered: free first, then tiers lowest→highest discount,
+//   // so the shuffle is what randomises who gets what — not the order here.
+
+//   type Prize =
+//     | { type: "free"; vendorId: string; vendorName: string }
+//     | { type: "discount"; vendorId: string; vendorName: string; discountPct: number; dineInAvailable: string; dineInUntil: string };
+
+//   const prizePool: Prize[] = [];
+
+//   for (const optIn of cycle.vendorOptIns ?? []) {
+//     const { vendorId, vendorName, freeVouchers = 0, discountTiers = [] } = optIn;
+
+//     // Free vouchers
+//     for (let i = 0; i < freeVouchers; i++) {
+//       prizePool.push({ type: "free", vendorId, vendorName });
+//     }
+
+//     // Discount tiers — sort ascending so lower discounts are assigned first
+//     // (winners drawn first get the bigger prizes via the shuffle, see step 5)
+//     const sortedTiers = [...discountTiers].sort((a, b) => a.percentage - b.percentage);
+//     for (const tier of sortedTiers) {
+//       for (let i = 0; i < tier.quantity; i++) {
+//         prizePool.push({
+//           type: "discount",
+//           vendorId,
+//           vendorName,
+//           discountPct: tier.percentage,
+//           dineInAvailable: tier.dineInAvailable,
+//           dineInUntil: tier.dineInUntil,
+//         });
+//       }
+//     }
+//   }
+
+//   const totalPrizes = prizePool.length;
+
+//   if (totalPrizes === 0) {
+//     return NextResponse.json(
+//       { error: "Cycle has no prizes configured (empty vendorOptIns). Cannot run the draw." },
+//       { status: 409 }
+//     );
+//   }
+
+//   /* ── 5. Shuffle participants, then assign prizes in order ─────── */
+//   //
+//   // Shuffle the eligible participants — the first `totalPrizes` participants
+//   // are winners; the rest receive no prize this cycle.
+//   // The prize pool itself is NOT shuffled: free prizes go first, then tiers.
+//   // This means the luckiest participants (drawn earliest) get free meals.
+
+//   const shuffledParticipants = cryptoShuffle([...eligible]);
+//   const prizeWinners = shuffledParticipants.slice(0, totalPrizes);
+//   const noPrize = shuffledParticipants.slice(totalPrizes);
+
+//   // Pair each winner with their prize
+//   const assignments = prizeWinners.map((voucher, i) => ({
+//     voucher,
+//     prize: prizePool[i],
+//   }));
+
+//   /* ── 6. Categorise for the draw log ──────────────────────────── */
+//   const freeCodes = assignments.filter((a) => a.prize.type === "free").map((a) => a.voucher.code);
+//   const discountCodes = assignments.filter((a) => a.prize.type === "discount").map((a) => a.voucher.code);
+//   const voucherCodes = [...freeCodes, ...discountCodes]; // all distributed (free + discount)
+
+//   /* ── 7. Write results in a batch ─────────────────────────────── */
+//   const logRef = adminDb.collection("drawLogs").doc();
+
+//   const log: Omit<DrawLogRecord, "executedAt"> & { executedAt: unknown } = {
+//     id: logRef.id,
+//     cycleId: cycle.id,
+//     cycleNumber: cycle.cycleNumber,
+//     triggeredBy: result.admin.uid,
+//     triggeredByName: result.admin.displayName,
+//     eligiblePool: pool,
+//     voucherCodes,
+//     freeCodes,
+//     discountCodes,
+//     status: "completed",
+//     executedAt: FieldValue.serverTimestamp(),
+//   };
+
+//   const batch = adminDb.batch();
+
+//   /* Write the draw log */
+//   batch.set(logRef, log);
+
+//   /* Update cycle with drawLogId (keep as "started" — admin closes manually) */
+//   batch.update(cycleDoc.ref, {
+//     drawLogId: logRef.id,
+//     updatedAt: FieldValue.serverTimestamp(),
+//   });
+
+//   /* Update winner vouchers with their assigned prize */
+//   for (const { voucher, prize } of assignments) {
+//     const ref = adminDb.collection("vouchers").doc(voucher.code);
+
+//     const expiresAt = new Date(
+//       Date.now() + cycle.cooldownHours * 60 * 60 * 1000
+//     );
+
+//     if (prize.type === "free") {
+//       batch.update(ref, {
+//         status: "won",
+//         type: "free",
+//         vendorId: prize.vendorId,
+//         vendorName: prize.vendorName,
+//         expiresAt,
+//         updatedAt: FieldValue.serverTimestamp(),
+//       });
+//     } else {
+//       batch.update(ref, {
+//         status: "won",
+//         type: "discount",
+//         discountPct: prize.discountPct,
+//         dineInAvailable: prize.dineInAvailable,
+//         dineInUntil: prize.dineInUntil,
+//         vendorId: prize.vendorId,
+//         vendorName: prize.vendorName,
+//         expiresAt,
+//         updatedAt: FieldValue.serverTimestamp(),
+//       });
+//     }
+//   }
+
+//   /* Mark participants without a prize */
+//   for (const voucher of noPrize) {
+//     const ref = adminDb.collection("vouchers").doc(voucher.code);
+//     batch.update(ref, {
+//       status: "no_prize",
+//       updatedAt: FieldValue.serverTimestamp(),
+//     });
+//   }
+
+//   await batch.commit();
+
+//   return NextResponse.json({
+//     ok: true,
+//     drawLogId: logRef.id,
+//     cycleNumber: cycle.cycleNumber,
+//     eligiblePool: pool,
+//     voucherCodes,
+//     freeCodes,
+//     discountCodes,
+//   });
+// }
+
+
+
+/* ── Voucher code generator: PR-XXXX-XXXX ───────────────────────── */
+function generateVoucherCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const seg = (n: number) =>
+    Array.from({ length: n }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  return `PR-${seg(4)}-${seg(4)}`;
 }
 
 /* ── Cryptographic Fisher-Yates shuffle ─────────────────────────── */

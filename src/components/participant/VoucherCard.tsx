@@ -92,7 +92,7 @@ export function RaffleVoucherCard({
       {/* Top */}
       <div className="mb-4">
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-[var(--lime)]">
-          Raffle voucher{voucher.status === "redeemed" ? " · Redeemed" : ""}
+          {compact ? "Raffle" : "Free Meal"} voucher {voucher.status === "eligible" ? " · active" : (" · " + voucher.status)}
         </p>
 
         {/* Code + copy */}

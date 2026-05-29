@@ -50,11 +50,13 @@ export default function OverviewPage() {
 
         // Enrich with voucher count if cycle active
         if (cycle) {
-          const participants = await adminGet<{ participantCount: number }>(
-            `/api/admin/stats/participants?cycleId=${cycle.id}`
-          ).catch(() => ({ participantCount: 0 }));
+          // if (cycle.participantIds.length < 1) {
 
-          console.log(participants);
+          //   const participants = await adminGet<{ participantCount: number }>(
+          //     `/api/admin/stats/participants?cycleId=${cycle.id}`
+          //   ).catch(() => ({ participantCount: 0 }));
+            
+          // }
           
           const voucherCount = await adminGet<[]>(
             `/api/admin/stats/vouchers?cycleId=${cycle.id}`
@@ -62,7 +64,8 @@ export default function OverviewPage() {
           console.log(voucherCount);
 
           setData((prev) => prev
-            ? { ...prev, participants: participants?.participantCount, vouchers: voucherCount.length }
+            // ? { ...prev, participants: participants?.participantCount, vouchers: voucherCount.length }
+            ? { ...prev, participants: cycle.participantIds.length, vouchers: voucherCount.length }
             : prev
           );
         }

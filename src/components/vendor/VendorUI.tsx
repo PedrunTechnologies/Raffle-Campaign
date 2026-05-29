@@ -1,4 +1,5 @@
 import React from "react";
+import { TableLoader } from "../ui/Loader";
 
 /* ─── KPI Tile ─── */
 export function KpiTile({
@@ -108,30 +109,35 @@ export function Badge({
 export function Table({
   headers,
   children,
+  loading = false,
 }: {
   headers: string[];
   children: React.ReactNode;
+  loading?: boolean;
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-sm">
-        <thead>
-          <tr className="border-b border-[var(--line)] bg-[var(--grey-50)]">
-            {headers.map((h) => (
-              <th
-                key={h}
-                className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-[var(--mute)] whitespace-nowrap"
-              >
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>{children}</tbody>
-      </table>
+      {loading ? <TableLoader rows={headers.length} cols={6} /> :
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-[var(--line)] bg-[var(--grey-50)]">
+              {headers.map((h) => (
+                <th
+                  key={h}
+                  className="whitespace-nowrap px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-[var(--mute)]"
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>{children}</tbody>
+        </table>
+      }
     </div>
   );
 }
+
 
 export function Tr({ children }: { children: React.ReactNode }) {
   return (

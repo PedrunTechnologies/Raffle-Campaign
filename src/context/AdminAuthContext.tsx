@@ -41,9 +41,8 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         setAdmin(data);
       } else {
         // Signed into Firebase but not in /admins — force sign-out
-        // await signOut(auth);
+        await signOut(auth);
         console.error("Admin fetch failed", await res.text());
-  // setAdmin(null);
         setAdmin(null);
       }
     } catch {
@@ -66,7 +65,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   }, [loadAdmin]);
 
   const logout = useCallback(async () => {
-    await fetch("/api/admin/auth/session", { method: "DELETE" });
+    await fetch("/api/admin/auth/session", { method: "DELETE", credentials: "include" });
     await signOut(auth);
     window.location.href = "/admin/login";
   }, []);

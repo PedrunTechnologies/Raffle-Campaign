@@ -364,7 +364,7 @@ export default function ApplyPage() {
               <Link href="/vendor/login">
                 <Button variant="ghost">Back to login</Button>
               </Link>
-              <Button disabled={!agreed || submitting}>
+              <Button type="submit" disabled={!agreed || submitting}>
                 {submitting ? "Submitting…" : "Submit application"}
               </Button>
             </div>

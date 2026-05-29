@@ -58,6 +58,7 @@ export interface VendorRecord {
   socials:        VendorSocials;
   status:         "pending" | "active" | "suspended";
   cycleCount:     number;
+  fcmTokens?:      string[];          // FCM device tokens for push notifications
   cycles:         [];
   createdAt:      Timestamp;
   updatedAt:      Timestamp;
@@ -102,12 +103,14 @@ export interface CycleRecord {
   vendorOptIns:      VendorOptIn[];
   totalPool:         number;
   drawLogId:         string | null;
+  participantIds:    string[];
   createdBy:         string;
   startedBy:         string | null;
   completedBy:       string | null;
   createdAt:         Timestamp;
   updatedAt:         Timestamp;
 }
+
 
 export interface VendorOptIn {
   vendorId:      string;
@@ -147,7 +150,7 @@ export interface VoucherRecord {
   participantId: string;
   type:          "free" | "discount" | null;
   discountPct:   number | null;
-  status:        "issued" | "eligible" | "redeemed" | "expired";
+  status:        "issued" | "eligible" | "redeemed" | "expired" | "no_prize" | "won";
   vendorId:      string | null;
   vendorName?:      string | null;
   issuedAt:      Timestamp;
@@ -167,4 +170,5 @@ export interface RedemptionRecord {
   redeemedAt:   Timestamp;
   redeemedBy:   string;            // vendor uid who marked it
 }
+
 

@@ -5,16 +5,15 @@ import type { UserProfile } from "@/lib/user";
 import type { CycleRecord, VoucherRecord } from "@/lib/types";
 
 export interface ParticipantDashboardData {
-  profile:    UserProfile;
+  profile: UserProfile;
   cycleState: CycleState;
 }
 
 export type CycleState =
   | { status: "no_cycle" }
-  | { status: "tasks_pending"; cycle: CycleRecord; completedTaskIds: string[] }
-  | { status: "voucher_issued"; cycle: CycleRecord; voucher: VoucherRecord; completedTaskIds: string[] }
-  | { status: "draw_done";      cycle: CycleRecord; voucher: VoucherRecord }
-  | { status: "cooldown";       nextCycleAt: string | null; lastVoucher: VoucherRecord | null };
+  | { status: "tasks_pending"; cycle: CycleRecord; completedTaskIds: string[]; qualified: boolean }
+  | { status: "draw_done"; cycle: CycleRecord; voucher: VoucherRecord }
+  | { status: "cooldown"; nextCycleAt: string | null; lastVoucher: VoucherRecord | null };
 
 export async function GET(req: NextRequest) {
   const result = await requireParticipant(req);
@@ -35,27 +34,26 @@ export async function GET(req: NextRequest) {
     .limit(1)
     .get();
 
-  /* ── 3. No active cycle — cooldown ── */
+  /* ── 3. No active cycle — cooldown or idle ── */
   if (activeCycleSnap.empty) {
-    // Get their last voucher for the cooldown screen
-    const lastVoucherSnap = await adminDb
-      .collection("vouchers")
-      .where("participantId", "==", uid)
-      .orderBy("issuedAt", "desc")
-      .limit(1)
-      .get();
+    const [lastVoucherSnap, nextSnap] = await Promise.all([
+      adminDb
+        .collection("vouchers")
+        .where("participantId", "==", uid)
+        .orderBy("issuedAt", "desc")
+        .limit(1)
+        .get(),
+      adminDb
+        .collection("cycles")
+        .where("status", "==", "draft")
+        .orderBy("windowClose", "asc")
+        .limit(1)
+        .get(),
+    ]);
 
     const lastVoucher = lastVoucherSnap.empty
       ? null
       : lastVoucherSnap.docs[0].data() as VoucherRecord;
-
-    // Find upcoming draft cycle for next window time
-    const nextSnap = await adminDb
-      .collection("cycles")
-      .where("status", "==", "draft")
-      .orderBy("windowClose", "asc")
-      .limit(1)
-      .get();
 
     const nextCycleAt = nextSnap.empty
       ? null
@@ -69,45 +67,57 @@ export async function GET(req: NextRequest) {
 
   const cycle = activeCycleSnap.docs[0].data() as CycleRecord;
 
-  /* ── 4. Check if participant already has a voucher for this cycle ── */
-  const voucherSnap = await adminDb
-    .collection("vouchers")
-    .where("participantId", "==", uid)
-    .where("cycleId",       "==", cycle.id)
-    .limit(1)
-    .get();
+  /* ── 4. Fetch participant's submissions + any voucher in parallel ── */
+  const [submissionSnap, voucherSnap] = await Promise.all([
+    adminDb
+      .collection("taskSubmissions")
+      .where("participantId", "==", uid)
+      .where("cycleId", "==", cycle.id)
+      .get(),
+    adminDb
+      .collection("vouchers")
+      .where("participantId", "==", uid)
+      .where("cycleId", "==", cycle.id)
+      .limit(1)
+      .get(),
+  ]);
 
-  /* ── 5. No voucher yet — show tasks ── */
-  const submissionSnap = await adminDb
-    .collection("taskSubmissions")
-    .where("participantId", "==", uid)
-    .where("cycleId",       "==", cycle.id)
-    .get();
+  const completedTaskIds = submissionSnap.docs.map((d) => d.data().taskId as string);
 
-  const completedTaskIds = submissionSnap.docs.map(
-    (d) => d.data().taskId as string
-  );
-
-  if (!voucherSnap.empty) {
+  /* ── 5. Voucher exists — draw has been run ── */
+  if (!voucherSnap.empty && cycle.drawLogId) {
     const voucher = voucherSnap.docs[0].data() as VoucherRecord;
-
-    // Draw has run — show result
-    if (cycle.drawLogId) {
-      return NextResponse.json({
-        profile,
-        cycleState: { status: "draw_done", cycle, voucher },
-      } satisfies ParticipantDashboardData);
-    }
-
-    // Voucher issued, draw still pending
     return NextResponse.json({
       profile,
-      cycleState: { status: "voucher_issued", cycle, voucher, completedTaskIds },
+      cycleState: { status: "draw_done", cycle, voucher },
     } satisfies ParticipantDashboardData);
   }
 
+  /* ── 6. No voucher yet — show tasks (draw hasn't run) ── */
+  const qualified = completedTaskIds.length >= cycle.minTasksToQualify;
+
   return NextResponse.json({
     profile,
-    cycleState: { status: "tasks_pending", cycle, completedTaskIds },
+    cycleState: { status: "tasks_pending", cycle, completedTaskIds, qualified },
   } satisfies ParticipantDashboardData);
 }
+
+// export async function GET(req: NextRequest) {
+//   if (!voucherSnap.empty) {
+//     const voucher = voucherSnap.docs[0].data() as VoucherRecord;
+
+//     // Draw has run — show result
+//     if (cycle.drawLogId) {
+//       return NextResponse.json({
+//         profile,
+//         cycleState: { status: "draw_done", cycle, voucher },
+//       } satisfies ParticipantDashboardData);
+//     }
+
+//     // Voucher issued, draw still pending
+//     return NextResponse.json({
+//       profile,
+//       cycleState: { status: "voucher_issued", cycle, voucher, completedTaskIds },
+//     } satisfies ParticipantDashboardData);
+//   }
+// }

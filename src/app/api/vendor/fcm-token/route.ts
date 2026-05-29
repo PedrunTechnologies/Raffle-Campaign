@@ -1,0 +1,48 @@
+/**
+ * POST /api/vendor/fcm-token
+ * Body: { token: string }
+ *
+ * Saves (arrayUnion) or removes (DELETE, arrayRemove) an FCM token
+ * on the vendor's document (keyed by uid on the vendors collection).
+ */
+
+import { NextRequest, NextResponse } from "next/server";
+import { adminDb } from "@/lib/firebase-admin";
+import { requireVendor } from "@/lib/require-vendor";
+import { FieldValue } from "firebase-admin/firestore";
+
+export async function POST(req: NextRequest) {
+  const result = await requireVendor(req);
+  if ("error" in result) return result.error;
+  const { vendor } = result;
+
+  const { token } = await req.json() as { token?: string };
+  if (!token || typeof token !== "string") {
+    return NextResponse.json({ error: "token is required." }, { status: 400 });
+  }
+
+  await adminDb.doc(`vendors/${vendor.id}`).update({
+    fcmTokens: FieldValue.arrayUnion(token),
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+
+  return NextResponse.json({ ok: true });
+}
+
+export async function DELETE(req: NextRequest) {
+  const result = await requireVendor(req);
+  if ("error" in result) return result.error;
+  const { vendor } = result;
+
+  const { token } = await req.json() as { token?: string };
+  if (!token) {
+    return NextResponse.json({ error: "token is required." }, { status: 400 });
+  }
+
+  await adminDb.doc(`vendors/${vendor.id}`).update({
+    fcmTokens: FieldValue.arrayRemove(token),
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+
+  return NextResponse.json({ ok: true });
+}

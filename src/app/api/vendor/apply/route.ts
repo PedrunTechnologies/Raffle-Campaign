@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       phone: body.phone.trim(),
       email: body.email.toLowerCase().trim(),
       socials: body.socials ?? {},
-      status: "pending",      // admin must approve before they can log in
+      status: "active",      // admin must approve before they can log in
       cycleCount: 0,
       cycles: [],
       createdAt: FieldValue.serverTimestamp(),

@@ -78,7 +78,7 @@ export default function LoginPage() {
           </p>
         )}
 
-        <Button fullWidth disabled={loading}>
+        <Button type="submit" fullWidth disabled={loading}>
           {loading ? "Signing in…" : "Login"}
         </Button>
 

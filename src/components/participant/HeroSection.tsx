@@ -1,4 +1,3 @@
-
 import Button from "../ui/Button";
 import Link from "next/link";
 
@@ -6,8 +5,8 @@ const HOW_STEPS = [
   { n: 1, title: "Create your account",   desc: "Phone number, name, basic details." },
   { n: 2, title: "Link your socials",      desc: "Instagram, Facebook, X — verified automatically." },
   { n: 3, title: "Complete daily tasks",   desc: "Follow, share, tag. One-time per cycle." },
-  { n: 4, title: "Claim your voucher",     desc: "Issued instantly, valid 24hrs after draw." },
-  { n: 5, title: "Win or save",            desc: "Winners eat free. Everyone else gets a discount." },
+  { n: 4, title: "Claim your voucher",     desc: "Issued during draw, valid 24hrs after draw." },
+  { n: 5, title: "Win or save",            desc: "Winners eat free or get a discount." },
 ];
 
 export default function HeroSection() {
@@ -60,15 +59,28 @@ export default function HeroSection() {
           >
             Follow, share, win.
             A free meal delivered directly
-            to your door every single day.
+            to your door after every cycle draw.
           </p>
 
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <Link href="/signup">
               <Button>Get Started</Button>
             </Link>
             <Link href="/login">
               <Button variant="ghost">Sign In</Button>
+            </Link>
+          </div>
+
+          <div className="mt-5">
+            <Link
+              href="/vendor/login"
+              className="inline-flex items-center gap-1.5 text-sm text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)]"
+            >
+              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[var(--grey-100)] text-xs">
+                🏪
+              </span>
+              Are you a vendor?{" "}
+              <span className="font-medium text-[var(--blue)]">Access the vendor portal here→</span>
             </Link>
           </div>
         </div>

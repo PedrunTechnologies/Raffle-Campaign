@@ -3,6 +3,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import { requireAdmin } from "@/lib/require-admin";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import type { CycleRecord } from "@/lib/types";
+import { notifyParticipantsNewCycle, notifyVendorsNewCycle } from "@/lib/fcm";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -55,10 +56,10 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   /* Transition — windowOpen is set to NOW (server timestamp), not the draft value */
   await adminDb.doc(`cycles/${id}`).update({
-    status:    "started",
+    status: "started",
     windowOpen: FieldValue.serverTimestamp(),
     startedBy: result.admin.uid,
-    updatedAt:  FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
   });
 
   /* Mark all assigned tasks as activeInCycle */
@@ -66,10 +67,16 @@ export async function POST(req: NextRequest, { params }: Params) {
   for (const taskId of cycle.taskIds) {
     batch.update(adminDb.doc(`tasks/${taskId}`), {
       activeInCycle: true,
-      updatedAt:     FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
   }
   await batch.commit();
+
+  /* Fire push notifications — non-blocking */
+  void Promise.allSettled([
+    notifyParticipantsNewCycle(cycle.cycleNumber),
+    notifyVendorsNewCycle(cycle.cycleNumber),
+  ]);
 
   return NextResponse.json({ ok: true });
 }

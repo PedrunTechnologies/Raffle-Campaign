@@ -92,13 +92,9 @@ export default function RedemptionsPage() {
       </div>
 
       <Panel title="All redemptions" noPadding>
-        {loading ? (
-          <div className="px-5 py-10 text-center text-sm text-[var(--ink-soft)]">
-            Loading…
-          </div>
-        ) : error ? (
+        {error ? (
           <div className="px-5 py-10 text-center text-sm text-[var(--blue)]">{error}</div>
-        ) : redemptions.length === 0 ? (
+        ) : (!loading && redemptions.length === 0) ? (
           <div className="px-5 py-14 text-center">
             <p className="mb-1 text-sm font-semibold text-[var(--ink)]">No redemptions yet</p>
             <p className="text-sm text-[var(--ink-soft)]">
@@ -106,7 +102,7 @@ export default function RedemptionsPage() {
             </p>
           </div>
         ) : (
-          <Table headers={["Code", "Type", "Redeemed at"]}>
+          <Table loading={loading} headers={["Code", "Type", "Redeemed at"]}>
             {redemptions.map((r) => (
               <Tr key={r.id}>
                 <Td mono>{r.voucherCode}</Td>
@@ -122,31 +118,6 @@ export default function RedemptionsPage() {
             ))}
           </Table>
         )}
-      </Panel>
-
-
-
-      <Panel title="Last 7 days" right="42 redemptions" noPadding>
-        <Table headers={["Date", "Cycle", "Code", "Type", "Reimbursement", "Status"]}>
-          {ROWS.map((row) => (
-            <Tr key={row.code}>
-              <Td className="whitespace-nowrap text-[var(--ink-soft)]">
-                {row.date}
-              </Td>
-              <Td className="font-mono text-xs text-[var(--ink-soft)]">
-                {row.cycle}
-              </Td>
-              <Td mono>{row.code}</Td>
-              <Td>{row.type}</Td>
-              <Td mono>{row.reimb}</Td>
-              <Td>
-                <Badge variant={row.status}>
-                  {STATUS_LABEL[row.status]}
-                </Badge>
-              </Td>
-            </Tr>
-          ))}
-        </Table>
       </Panel>
     </>
   );

@@ -141,45 +141,6 @@ export default function DashboardPage() {
             sub: "All time",
           },
         ].map((k) => (
-          <div key={k.label} className="rounded-2xl border border-[var(--line)] bg-white p-5">
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-[var(--mute)]">
-              {k.label}
-            </p>
-            <p className="text-3xl font-light tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
-              {k.value}
-            </p>
-            <p className="mt-1 text-xs text-[var(--ink-soft)]">{k.sub}</p>
-          </div>
-        ))}
-      </div>
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {[
-          {
-            label: "Free vouchers declared",
-            value: loading ? "—" : String(freeTotal),
-            sub: "This cycle",
-          },
-          {
-            label: "Discount vouchers",
-            value: loading ? "—" : String(discTotal),
-            sub: "Across all tiers",
-          },
-          {
-            label: "Redeemed today",
-            value: loading ? "—" : String(
-              redemptions.filter((r) => {
-                const d = new Date((r.redeemedAt as unknown as { _seconds: number })._seconds * 1000);
-                return d.toDateString() === new Date().toDateString();
-              }).length
-            ),
-            sub: "Vouchers verified",
-          },
-          {
-            label: "Total redemptions",
-            value: loading ? "—" : String(redemptions.length),
-            sub: "All time",
-          },
-        ].map((k) => (
           <KpiTile
             label={k.label}
             value={k.value}

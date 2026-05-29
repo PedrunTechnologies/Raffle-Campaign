@@ -12,9 +12,9 @@ type DrawState = "idle" | "confirm" | "running" | "done";
 interface DrawResult {
   drawLogId:   string;
   cycleNumber: number;
-  pool:        number;
+  estimatedPool:        number;
   winnersCount: number;
-  winnerCodes: string[];
+  voucherCodes: string[];
 }
 
 function fmtTs(ts: { _seconds: number } | null | undefined): string {
@@ -188,8 +188,8 @@ export default function TriggerDrawPage() {
             <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
                 { l: "Executed at",  v: executedAt           },
-                { l: "Eligible pool", v: String(result.pool)  },
-                { l: "Winners",       v: String(result.winnersCount) },
+                { l: "Eligible pool", v: String(result.estimatedPool)  },
+                { l: "Winners",       v: String(result.voucherCodes.length) },
                 { l: "Cycle",         v: `#${result.cycleNumber}` },
               ].map((s) => (
                 <div key={s.l} className="rounded-xl border border-[var(--line)] bg-white px-3.5 py-3">
@@ -277,7 +277,7 @@ export default function TriggerDrawPage() {
                   { l: "Vendor opt-ins",  v: String(totalVendors)                   },
                   { l: "Voucher pool",    v: totalPool > 0 ? String(totalPool) : "—" },
                   { l: "Tasks",           v: String(cycle.taskIds.length)             },
-                  { l: "Participants",         v: String(cycle.vendorOptIns)               },
+                  { l: "Participants",         v: String(cycle.participantIds.length)               },
                 ].map((m) => (
                   <div key={m.l} className="rounded-xl bg-white/10 px-3 py-2.5 text-center">
                     <p className="text-base font-semibold text-[var(--lime)]">{m.v}</p>
@@ -360,51 +360,12 @@ export default function TriggerDrawPage() {
                 {running ? "Verifying…" : "Confirm draw"}
               </button>
             </div>
-
-
-            <div className="mb-4 flex flex-col gap-1.5">
-              <label className="text-[11px] font-semibold uppercase tracking-widest text-[var(--mute)]">
-                Admin password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => { setPassword(e.target.value); setWrongPw(false); }}
-                placeholder="••••••••"
-                className={`
-                  rounded-xl border px-4 py-3 text-sm outline-none transition-all
-                  ${wrongPw
-                    ? "border-[var(--blue)] ring-2 ring-[var(--blue)]/10"
-                    : "border-[var(--line)] focus:border-[var(--blue)] focus:ring-2 focus:ring-[var(--blue)]/10"
-                  }
-                `}
-              />
-              {wrongPw && (
-                <p className="text-xs text-[var(--blue)]">Incorrect password. Try: admin123</p>
-              )}
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => setDrawState("idle")}
-                className="flex-1 rounded-xl border border-[var(--line)] bg-[var(--grey-50)] py-2.5 text-sm font-medium text-[var(--ink)] transition-all hover:bg-[var(--grey-100)]"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirm}
-                disabled={!password}
-                className="flex-1 rounded-xl bg-[var(--ink)] py-2.5 text-sm font-semibold text-white transition-all hover:bg-[var(--ink-soft)] disabled:opacity-40"
-              >
-                Confirm draw
-              </button>
-            </div>
           </div>
         )}
 
         {/* ── What happens ── */}
         <Panel title="What happens when you run the draw">
-          <ol className="space-y-3">
+          {/* <ol className="space-y-3">
             {[
               <>Server snapshots all <code className="rounded bg-[var(--grey-100)] px-1.5 py-0.5 font-mono text-[11px]">eligible</code> vouchers for this cycle.</>,
               <>Cryptographic Fisher-Yates shuffle selects <code className="rounded bg-[var(--grey-100)] px-1.5 py-0.5 font-mono text-[11px]">{cycle.totalPool} vouchers</code>.</>,
@@ -419,7 +380,7 @@ export default function TriggerDrawPage() {
                 <span className="leading-relaxed">{step}</span>
               </li>
             ))}
-          </ol>
+          </ol> */}
 
           <ol className="space-y-3">
             {[
