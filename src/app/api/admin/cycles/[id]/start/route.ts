@@ -72,8 +72,14 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
   await batch.commit();
 
-  /* Fire push notifications — non-blocking */
-  void Promise.allSettled([
+  // /* Fire push notifications — non-blocking */
+  // void Promise.allSettled([
+  //   notifyParticipantsNewCycle(cycle.cycleNumber),
+  //   notifyVendorsNewCycle(cycle.cycleNumber),
+  // ]);
+
+  /* Fire push notifications — awaited so serverless fn doesn't exit early */
+  await Promise.allSettled([
     notifyParticipantsNewCycle(cycle.cycleNumber),
     notifyVendorsNewCycle(cycle.cycleNumber),
   ]);

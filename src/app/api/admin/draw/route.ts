@@ -230,11 +230,18 @@ export async function POST(req: NextRequest) {
 
   await batch.commit();
 
-    /* Fire push notifications — non-blocking, never fail the response */
-  void Promise.allSettled([
+  /* Fire push notifications — non-blocking, never fail the response */
+  // void Promise.allSettled([
+  //   notifyParticipantsDrawDone(cycle.cycleNumber),
+  //   notifyVendorsDrawDone(cycle.cycleNumber),
+  // ]);
+
+  /* Fire push notifications — awaited so serverless fn doesn't exit early */
+  await Promise.allSettled([
     notifyParticipantsDrawDone(cycle.cycleNumber),
     notifyVendorsDrawDone(cycle.cycleNumber),
   ]);
+
 
   return NextResponse.json({
     ok: true,
@@ -439,7 +446,7 @@ export async function POST(req: NextRequest) {
 // }
 
 
- /* ── seperate ─────────────────────────────────── */
+/* ── seperate ─────────────────────────────────── */
 
 
 // export async function POST(req: NextRequest) {
