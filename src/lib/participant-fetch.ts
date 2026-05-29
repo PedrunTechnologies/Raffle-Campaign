@@ -6,6 +6,7 @@
  * updates the cookie via POST /api/auth/session, then retries once.
  */
 
+// import { useAuth } from "@/context/AuthContext";
 import { auth } from "@/lib/firebase";
 
 export class ParticipantFetchError extends Error {
@@ -68,6 +69,7 @@ async function participantFetch<T = unknown>(
     ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
     ...opts?.headers,
   };
+    // const { logout } = useAuth();
 
   const res = await fetch(url, {
     method,
@@ -95,6 +97,13 @@ async function participantFetch<T = unknown>(
       await refreshSession();
       return participantFetch<T>(method, url, body, opts, true);
     }
+        if (
+            res.status === 401 &&
+            message === "Invalid token"
+        ) {
+          // logout();
+            window.location.href = "/login";
+        }
 
     throw new ParticipantFetchError(res.status, message);
   }

@@ -175,7 +175,7 @@ export default function AdminLoginPage() {
             </div>
           )}
 
-          <Button fullWidth disabled={loading}>
+          <Button type="submit" fullWidth disabled={loading}>
             {loading ? "Signing in…" : "Login"}
           </Button>
 

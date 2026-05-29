@@ -15,6 +15,7 @@
  *   await adminDelete(`/api/admin/tasks/${id}`);
  */
 
+// import { useAdminAuth } from "@/context/AdminAuthContext";
 import { auth } from "@/lib/firebase";
 /* ── types ────────────────────────────────────────────────────────────── */
 
@@ -77,6 +78,7 @@ async function adminFetch<T = unknown>(
         ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
         ...opts?.headers,
     };
+    // const { logout } = useAdminAuth();
 
     const res = await fetch(url, {
         method,
@@ -134,6 +136,13 @@ async function adminFetch<T = unknown>(
                 opts,
                 true,
             );
+        }
+        if (
+            res.status === 401 &&
+            message === "Invalid token"
+        ) {
+            window.location.href = "/admin/login";
+            // logout();
         }
 
         throw new AdminFetchError(res.status, message);
