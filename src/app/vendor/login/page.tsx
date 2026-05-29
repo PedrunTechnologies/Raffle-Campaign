@@ -106,7 +106,7 @@ export default function VendorLoginPage() {
         </div>
 
         <p className="text-sm text-white/50">
-          Trusted by <strong className="text-[var(--lime)]">24 vendors</strong>{" "}
+          Trusted by <strong className="text-[var(--lime)]">vendors</strong>{" "}
           across Uyo.
         </p>
       </div>

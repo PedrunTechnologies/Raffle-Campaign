@@ -4,8 +4,10 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { useFcmToken } from "@/hooks/useFcmToken";
 
 function FcmRegistrar() {
-  // const { user } = useAuth();
-  useFcmToken({ tokenEndpoint: "/api/participant/fcm-token" });
+  const { user } = useAuth();
+  // useFcmToken({ tokenEndpoint: "/api/participant/fcm-token" });
+  
+  useFcmToken({ user, tokenEndpoint: "/api/participant/fcm-token" });
   return null;
 }
 

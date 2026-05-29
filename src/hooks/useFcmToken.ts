@@ -1,70 +1,67 @@
 /**
  * hooks/useFcmToken.ts
  *
- * Requests notification permission, retrieves the FCM registration token,
- * and saves it to the backend (arrayUnion — idempotent, multi-device safe).
+ * Call this hook AFTER the auth user is confirmed — pass the Firebase User
+ * object so the token save never races against auth loading.
  *
- * The service worker is served dynamically from /firebase-messaging-sw.js
- * (an API route) so Firebase config env vars are available inside it.
- *
- * Usage:
- *   useFcmToken({ tokenEndpoint: "/api/participant/fcm-token" })
- *   useFcmToken({ tokenEndpoint: "/api/vendor/fcm-token" })
+ * Handles:
+ *  - SW registration at /firebase-messaging-sw.js (scope /)
+ *  - FCM token retrieval and save to backend (idempotent arrayUnion)
+ *  - Foreground message display (app open) via onMessage
+ *  - Background message display handled by the SW itself
  */
 
 "use client";
 
 import { useEffect } from "react";
-import { getToken } from "firebase/messaging";
-import { getFirebaseMessaging, auth } from "@/lib/firebase";
+import { getToken, onMessage } from "firebase/messaging";
+import { getFirebaseMessaging } from "@/lib/firebase";
+import type { User } from "firebase/auth";
 
 const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 
 interface Options {
+  /** Authenticated Firebase user — hook is a no-op if null */
+  user:          User | null;
+  /** API endpoint that accepts POST { token: string } */
   tokenEndpoint: string;
 }
 
-export function useFcmToken({ tokenEndpoint }: Options) {
+export function useFcmToken({ user, tokenEndpoint }: Options) {
   useEffect(() => {
+    if (!user) return; // wait until auth is resolved
     let cancelled = false;
 
     async function register() {
       try {
-        if (typeof window === "undefined") return;
-        if (!("serviceWorker" in navigator))  return;
+        if (typeof window === "undefined")       return;
+        if (!("serviceWorker" in navigator))     return;
+        if (!("Notification" in window))         return;
 
-        /* Request notification permission */
         const permission = await Notification.requestPermission();
         if (permission !== "granted") return;
 
-        /* Get FCM messaging instance (null if browser unsupported) */
         const messaging = await getFirebaseMessaging();
-        if (!messaging) return;
+        if (!messaging || cancelled) return;
 
-        /* Register the SW explicitly so we control the URL.
-           The SW is served by an API route that injects Firebase config. */
+        /* Register SW — scope must be "/" so it can intercept all push events.
+           The SW is served by an API route that bakes in the Firebase config. */
         const registration = await navigator.serviceWorker.register(
           "/firebase-messaging-sw.js",
-          { scope: "/firebase-cloud-messaging-push-scope" }
+          { scope: "/" }
         );
 
-        /* Wait for the SW to be active before asking for a token */
-        await navigator.serviceWorker.ready;
-
-        if (cancelled) return;
-
+        /* Use the registration we just got — don't rely on .ready which may
+           resolve with a different SW that controls the page. */
         const token = await getToken(messaging, {
-          vapidKey:            VAPID_KEY,
+          vapidKey:                  VAPID_KEY,
           serviceWorkerRegistration: registration,
         });
 
         if (!token || cancelled) return;
 
-        /* Save token to backend */
-        const user = auth.currentUser;
-        if (!user) return;
-        const idToken = await user.getIdToken();
-
+        /* Persist token to Firestore via the API */
+        const idToken = await user?.getIdToken();
         await fetch(tokenEndpoint, {
           method:  "POST",
           headers: {
@@ -73,12 +70,35 @@ export function useFcmToken({ tokenEndpoint }: Options) {
           },
           body: JSON.stringify({ token }),
         });
+
+        /* Foreground message handler — app is open, SW won't show the
+           notification automatically so we do it here via the Notifications API. */
+        const unsubscribe = onMessage(messaging, (payload) => {
+          const { title, body } = payload.notification ?? {};
+          if (!title) return;
+          if (Notification.permission === "granted") {
+            new Notification(title, {
+              body:  body  ?? "",
+              icon:  "/icon.png",
+              badge: "/icon.png",
+              data:  payload.data,
+            });
+          }
+        });
+
+        return unsubscribe;
       } catch (err) {
         console.warn("[useFcmToken] registration failed:", err);
       }
     }
 
-    register();
-    return () => { cancelled = true; };
-  }, [tokenEndpoint]);
+    const cleanupPromise = register();
+
+    return () => {
+      cancelled = true;
+      // Call the onMessage unsubscribe if it resolved
+      cleanupPromise.then((unsub) => unsub?.());
+    };
+  }, [user, tokenEndpoint]); // re-run if user changes (e.g. login/logout)
 }
+
