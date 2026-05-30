@@ -17,7 +17,7 @@ export class ParticipantFetchError extends Error {
 
 interface FetchOptions {
   headers?: Record<string, string>;
-  signal?:  AbortSignal;
+  signal?: AbortSignal;
 }
 
 async function refreshSession(): Promise<void> {
@@ -45,10 +45,10 @@ async function refreshSession(): Promise<void> {
   const token = await freshUser.getIdToken(true);
 
   const res = await fetch("/api/auth/session", {
-    method:      "POST",
+    method: "POST",
     credentials: "include",
-    headers:     { "Content-Type": "application/json" },
-    body:        JSON.stringify({ idToken: token }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idToken: token }),
   });
 
   if (!res.ok) {
@@ -58,23 +58,23 @@ async function refreshSession(): Promise<void> {
 }
 
 async function participantFetch<T = unknown>(
-  method:  "GET" | "POST" | "PATCH" | "DELETE",
-  url:     string,
-  body?:   unknown,
-  opts?:   FetchOptions,
+  method: "GET" | "POST" | "PATCH" | "DELETE",
+  url: string,
+  body?: unknown,
+  opts?: FetchOptions,
   retried = false,
 ): Promise<T> {
   const headers: Record<string, string> = {
     ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
     ...opts?.headers,
   };
-    // const { logout } = useAuth();
+  // const { logout } = useAuth();
 
   const res = await fetch(url, {
     method,
     credentials: "include",
     headers,
-    body:   body !== undefined ? JSON.stringify(body) : undefined,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
     signal: opts?.signal,
   });
 
@@ -88,7 +88,7 @@ async function participantFetch<T = unknown>(
   if (!res.ok) {
     const message =
       typeof data === "object" && data !== null && "error" in data &&
-      typeof (data as Record<string, unknown>).error === "string"
+        typeof (data as Record<string, unknown>).error === "string"
         ? (data as { error: string }).error
         : `Request failed with status ${res.status}`;
 
@@ -96,12 +96,12 @@ async function participantFetch<T = unknown>(
       await refreshSession();
       return participantFetch<T>(method, url, body, opts, true);
     }
-        if (
-            res.status === 401 &&
-            message === "Invalid token"
-        ) {
-            window.location.href = "/login";
-        }
+    if (
+      res.status === 401 &&
+      (message === "Invalid token" || message === "Unauthorized")
+    ) {
+      window.location.href = "/login";
+    }
 
     throw new ParticipantFetchError(res.status, message);
   }

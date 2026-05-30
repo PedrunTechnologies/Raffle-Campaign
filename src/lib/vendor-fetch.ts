@@ -105,7 +105,7 @@ async function vendorFetch<T = unknown>(
     // Detect expired Firebase token
     if (
       res.status === 401 &&
-      (message === "TOKEN_EXPIRED" || message === "Invalid or expired token") &&
+      (message === "TOKEN_EXPIRED") &&
       !retried
     ) {
 
@@ -120,6 +120,12 @@ async function vendorFetch<T = unknown>(
         // opts,
         true,
       );
+    }
+    if (
+      res.status === 401 &&
+      (message === "Invalid token" || message === "Unauthorized")
+    ) {
+      window.location.href = "/vendor/login";
     }
 
     throw new VendorFetchError(res.status, message);

@@ -139,7 +139,7 @@ async function adminFetch<T = unknown>(
         }
         if (
             res.status === 401 &&
-            message === "Invalid token"
+            (message === "Invalid token" || message === "Unauthorized")
         ) {
             window.location.href = "/admin/login";
             // logout();
