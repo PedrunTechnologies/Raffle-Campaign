@@ -120,7 +120,7 @@ export default function LinkSocialsPage() {
 
   /* ── handle input change — strip prefix typos, debounce verify ── */
   function handleChange(id: SocialPlatform, raw: string) {
-    const clean = raw.replace(/^@+/, "").replace(/^fb\//, "").trim().toLowerCase();
+    const clean = raw.replace(/^@+/, "").replace(/^fb\//, "").toLowerCase();
 
     setPlatforms((prev) => ({
       ...prev,
