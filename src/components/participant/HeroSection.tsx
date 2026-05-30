@@ -2,11 +2,11 @@ import Button from "../ui/Button";
 import Link from "next/link";
 
 const HOW_STEPS = [
-  { n: 1, title: "Create your account",   desc: "Phone number, name, basic details." },
-  { n: 2, title: "Link your socials",      desc: "Instagram, Facebook, X — verified automatically." },
-  { n: 3, title: "Complete daily tasks",   desc: "Follow, share, tag. One-time per cycle." },
-  { n: 4, title: "Claim your voucher",     desc: "Issued during draw, valid 24hrs after draw." },
-  { n: 5, title: "Win or save",            desc: "Winners eat free or get a discount." },
+  { n: 1, title: "Create your account", desc: "Phone number, name, basic details." },
+  { n: 2, title: "Link your socials", desc: "Instagram, Facebook, X — verified automatically." },
+  { n: 3, title: "Complete daily tasks", desc: "Follow, share, tag. One-time per cycle." },
+  { n: 4, title: "Claim your voucher", desc: "Issued during draw, valid 24hrs after draw." },
+  { n: 5, title: "Win or save", desc: "Winners eat free or get a discount." },
 ];
 
 export default function HeroSection() {
@@ -62,27 +62,37 @@ export default function HeroSection() {
             to your door after every cycle draw.
           </p>
 
-          <div className="flex flex-wrap items-center gap-4">
-            <Link href="/signup">
-              <Button>Get Started</Button>
-            </Link>
-            <Link href="/login">
-              <Button variant="ghost">Sign In</Button>
-            </Link>
+          <div className="space-y-5">
+            <div className="flex flex-wrap items-center gap-4">
+              <Link href="/signup">
+                <Button>Get Started</Button>
+              </Link>
+
+              <Link href="/login">
+                <Button variant="ghost">Sign In</Button>
+              </Link>
+            </div>
+
+            <div
+              className="inline-flex items-center gap-3 px-4 py-3 rounded-2xl border border-[var(--line)] bg-white"
+            >
+              <span className="text-lg">🏪</span>
+
+              <div>
+                <p className="text-sm text-[var(--ink-soft)]">
+                  Restaurant or food vendor?
+                </p>
+
+                <Link
+                  href="/vendor/login"
+                  className="font-medium text-xl text-[var(--blue)] hover:underline"
+                >
+                  Access Vendor Portal →
+                </Link>
+              </div>
+            </div>
           </div>
 
-          <div className="mt-5">
-            <Link
-              href="/vendor/login"
-              className="inline-flex items-center gap-1.5 text-sm text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)]"
-            >
-              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[var(--grey-100)] text-xs">
-                🏪
-              </span>
-              Are you a vendor?{" "}
-              <span className="font-medium text-[var(--blue)]">Access the vendor portal here→</span>
-            </Link>
-          </div>
         </div>
 
         {/* ── Right: How it works card ── */}
@@ -111,44 +121,44 @@ export default function HeroSection() {
               </div>
             </div>
 
-             {/* Steps */}
-          <ol className="relative mb-12 flex flex-col gap-0">
-            {/* Vertical connector line */}
-            <div
-              className="
+            {/* Steps */}
+            <ol className="relative mb-12 flex flex-col gap-0">
+              {/* Vertical connector line */}
+              <div
+                className="
                 absolute left-[19px] top-10 -bottom-0
                 w-px bg-[var(--line)]
               "
-              aria-hidden
-            />
+                aria-hidden
+              />
 
-            {HOW_STEPS.map((step, i) => (
-              <li key={step.n} className="relative flex gap-5 pb-8 last:pb-0">
-                {/* Step number bubble */}
-                <div
-                  className="
+              {HOW_STEPS.map((step, i) => (
+                <li key={step.n} className="relative flex gap-5 pb-8 last:pb-0">
+                  {/* Step number bubble */}
+                  <div
+                    className="
                     relative z-10 flex h-10 w-10 shrink-0 mt-2
                     items-center justify-center
                     rounded-full bg-[var(--blue)]
                     text-sm font-bold text-white
                     shadow-sm
                   "
-                >
-                  {step.n}
-                </div>
+                  >
+                    {step.n}
+                  </div>
 
-                {/* Content */}
-                <div className="pt-1.5">
-                  <h3 className="mb-1 text-base font-semibold text-[var(--ink)]">
-                    {step.title}
-                  </h3>
-                  <p className="text-sm leading-relaxed text-[var(--ink-soft)]">
-                    {step.desc}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ol>
+                  {/* Content */}
+                  <div className="pt-1.5">
+                    <h3 className="mb-1 text-base font-semibold text-[var(--ink)]">
+                      {step.title}
+                    </h3>
+                    <p className="text-sm leading-relaxed text-[var(--ink-soft)]">
+                      {step.desc}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
 
             {/* CTA */}
             <div className="mt-7 border-t border-[var(--line)] pt-6">

@@ -6,7 +6,6 @@
  * updates the cookie via POST /api/auth/session, then retries once.
  */
 
-// import { useAuth } from "@/context/AuthContext";
 import { auth } from "@/lib/firebase";
 
 export class ParticipantFetchError extends Error {
@@ -101,7 +100,6 @@ async function participantFetch<T = unknown>(
             res.status === 401 &&
             message === "Invalid token"
         ) {
-          // logout();
             window.location.href = "/login";
         }
 

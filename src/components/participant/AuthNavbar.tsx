@@ -50,11 +50,13 @@ export default function AuthNavbar({ userName = "Participant" }: AuthNavbarProps
           </Link>
           <Link
             href="/how-it-works"
-            className="
-              rounded-xl px-4 py-2
-              text-sm font-medium text-[var(--ink-soft)]
-              transition-colors hover:bg-[var(--grey-50)] hover:text-[var(--ink)]
-            "
+            className={`
+              rounded-xl px-4 py-2 text-sm font-medium transition-colors
+              ${isActive("/how-it-works")
+                ? "bg-[var(--grey-50)] text-[var(--ink)]"
+                : "text-[var(--ink-soft)] hover:bg-[var(--grey-50)] hover:text-[var(--ink)]"
+              }
+            `}
           >
             How it works
           </Link>
@@ -66,7 +68,7 @@ export default function AuthNavbar({ userName = "Participant" }: AuthNavbarProps
                 ? "bg-[var(--grey-50)] text-[var(--ink)]"
                 : "text-[var(--ink-soft)] hover:bg-[var(--grey-50)] hover:text-[var(--ink)]"
               }
-  `}
+            `}
           >
             My voucher
           </Link>
@@ -112,7 +114,7 @@ export default function AuthNavbar({ userName = "Participant" }: AuthNavbarProps
           <div className="flex flex-col gap-1">
             {[
               { href: "/dashboard", label: "Dashboard" },
-              { href: "/voucher", label: "My voucher" },
+              { href: "/voucher-detail", label: "My voucher" },
               { href: "/how-it-works", label: "How it works" },
               { href: "/profile", label: "Profile" },
             ].map((item) => (

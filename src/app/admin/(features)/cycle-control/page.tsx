@@ -95,8 +95,7 @@ function CycleControlContent() {
 
   /* ── editable form state ── */
   const [windowClose, setWindowClose] = useState("");
-  const [cooldownHours, setCooldownHours] = useState("20");
-  const [winnersCount, setWinnersCount] = useState("1");
+  const [cooldownHours, setCooldownHours] = useState("24");
   const [minTasksToQualify, setMinTasksToQualify] = useState("1");
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
 
