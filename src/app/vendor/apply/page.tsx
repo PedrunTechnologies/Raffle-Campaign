@@ -22,30 +22,30 @@ import { adminDb } from "@/lib/firebase-admin"; // ← server action handles thi
    (a server action / API route) so we never expose the Admin SDK to the browser. */
 
 const BUSINESS_TYPES = [
-  { value: "",                label: "Select a business type…" },
+  { value: "", label: "Select a business type…" },
   { value: "restaurant_full", label: "Restaurant (full service)" },
-  { value: "restaurant_qsr",  label: "Quick service restaurant (QSR)" },
-  { value: "food_stall",      label: "Food stall / kiosk" },
-  { value: "cloud_kitchen",   label: "Cloud / ghost kitchen" },
-  { value: "cafe_bakery",     label: "Café / bakery" },
-  { value: "catering",        label: "Catering service" },
-  { value: "other",           label: "Other" },
+  { value: "restaurant_qsr", label: "Quick service restaurant (QSR)" },
+  { value: "food_stall", label: "Food stall / kiosk" },
+  { value: "cloud_kitchen", label: "Cloud / ghost kitchen" },
+  { value: "cafe_bakery", label: "Café / bakery" },
+  { value: "catering", label: "Catering service" },
+  { value: "other", label: "Other" },
 ];
 
 const DINE_IN_OPTIONS = [
   { value: "yes", label: "Yes — dine-in available" },
-  { value: "no",  label: "No — takeaway / delivery only" },
+  { value: "no", label: "No — takeaway / delivery only" },
 ];
 
 const CUISINE_OPTIONS = [
-  { value: "",              label: "Select a cuisine…" },
-  { value: "nigerian",      label: "Nigerian" },
-  { value: "continental",   label: "Continental" },
-  { value: "chinese",       label: "Chinese" },
-  { value: "indian",        label: "Indian" },
-  { value: "middle_eastern",label: "Middle Eastern" },
-  { value: "mixed",         label: "Mixed / fusion" },
-  { value: "other",         label: "Other" },
+  { value: "", label: "Select a cuisine…" },
+  { value: "nigerian", label: "Nigerian" },
+  { value: "continental", label: "Continental" },
+  { value: "chinese", label: "Chinese" },
+  { value: "indian", label: "Indian" },
+  { value: "middle_eastern", label: "Middle Eastern" },
+  { value: "mixed", label: "Mixed / fusion" },
+  { value: "other", label: "Other" },
 ];
 
 function SectionPanel({ step, title, children }: {
@@ -75,28 +75,28 @@ function Row({ children }: { children: React.ReactNode }) {
 
 export default function ApplyPage() {
   /* business */
-  const [name,           setName]           = useState("");
-  const [businessType,   setBusinessType]   = useState("");
-  const [cuisine,        setCuisine]        = useState("");
-  const [address,        setAddress]        = useState("");
+  const [name, setName] = useState("");
+  const [businessType, setBusinessType] = useState("");
+  const [cuisine, setCuisine] = useState("");
+  const [address, setAddress] = useState("");
   const [operatingHours, setOperatingHours] = useState("");
-  const [dineIn,         setDineIn]         = useState("yes");
+  const [dineIn, setDineIn] = useState("yes");
 
   /* contact */
   const [contactName, setContactName] = useState("");
   const [contactRole, setContactRole] = useState("");
-  const [phone,       setPhone]       = useState("");
-  const [email,       setEmail]       = useState("");
-  const [password,    setPassword]    = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   /* socials */
   const [igHandle, setIgHandle] = useState("");
   const [fbHandle, setFbHandle] = useState("");
-  const [xHandle,  setXHandle]  = useState("");
+  // const [xHandle, setXHandle] = useState("");
 
-  const [agreed,    setAgreed]    = useState(false);
-  const [submitting,setSubmitting]= useState(false);
-  const [error,     setError]     = useState("");
+  const [agreed, setAgreed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
 
@@ -111,16 +111,16 @@ export default function ApplyPage() {
 
     try {
       const res = await fetch("/api/vendor/apply", {
-        method:  "POST",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({
+        body: JSON.stringify({
           name, businessType, cuisine, address,
           operatingHours, dineIn,
           contactName, contactRole, phone, email, password,
           socials: {
             ...(igHandle ? { instagram: igHandle } : {}),
-            ...(fbHandle ? { facebook:  fbHandle } : {}),
-            ...(xHandle  ? { x:         xHandle  } : {}),
+            ...(fbHandle ? { facebook: fbHandle } : {}),
+            // ...(xHandle ? { x: xHandle } : {}),
           },
         }),
       });
@@ -146,7 +146,7 @@ export default function ApplyPage() {
           Application submitted.
         </h2>
         <p className="mb-8 max-w-md text-[var(--ink-soft)]">
-          A temporary password has been sent to the contact email, please use the password and contact email to log in. 
+          A temporary password has been sent to the contact email, please use the password and contact email to log in.
           The password can be changed after log in.
         </p>
         <Link href="/vendor/login">
@@ -224,7 +224,7 @@ export default function ApplyPage() {
                 placeholder="Mon–Sat · 09:00 – 22:00 · Sun · 12:00 – 22:00"
                 value={operatingHours}
                 onChange={(e) => setOperatingHours(e.target.value)}
-                // hint="Separate day ranges with · e.g. Mon–Fri · 08:00–20:00"
+              // hint="Separate day ranges with · e.g. Mon–Fri · 08:00–20:00"
               />
               <SelectField
                 label="Dine-in available?"
@@ -318,7 +318,7 @@ export default function ApplyPage() {
                 </div>
               </div>
             </Row>
-            <Row>
+            {/* <Row>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] font-semibold uppercase tracking-widest text-[var(--mute)]">
                   X (Twitter)
@@ -334,7 +334,7 @@ export default function ApplyPage() {
                   />
                 </div>
               </div>
-            </Row>
+            </Row> */}
           </SectionPanel>
 
           {/* Agreement */}

@@ -13,7 +13,7 @@ import { auth, db } from "./firebase";
 
 /* ── types ────────────────────────────────────────────────────────────── */
 
-export type SocialPlatform = "instagram" | "facebook" | "x";
+export type SocialPlatform = "instagram" | "facebook";
 
 export interface SocialLink {
   platform: SocialPlatform;

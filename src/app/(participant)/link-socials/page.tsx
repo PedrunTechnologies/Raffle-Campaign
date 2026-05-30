@@ -52,17 +52,17 @@ const PLATFORMS: {
         </div>
       ),
     },
-    {
-      id: "x",
-      label: "X (Twitter)",
-      placeholder: "yourhandle",
-      prefix: "@",
-      icon: (
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black text-sm font-bold text-white">
-          X
-        </div>
-      ),
-    },
+    // {
+    //   id: "x",
+    //   label: "X (Twitter)",
+    //   placeholder: "yourhandle",
+    //   prefix: "@",
+    //   icon: (
+    //     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black text-sm font-bold text-white">
+    //       X
+    //     </div>
+    //   ),
+    // },
   ];
 
 /* ── verify badge ────────────────────────────────────────────────────── */
@@ -94,7 +94,7 @@ export default function LinkSocialsPage() {
   const [platforms, setPlatforms] = useState<Record<SocialPlatform, PlatformState>>({
     instagram: { handle: "", verifyState: "idle", savedHandle: null },
     facebook: { handle: "", verifyState: "idle", savedHandle: null },
-    x: { handle: "", verifyState: "idle", savedHandle: null },
+    // x: { handle: "", verifyState: "idle", savedHandle: null },
   });
 
   const [saving, setSaving] = useState(false);

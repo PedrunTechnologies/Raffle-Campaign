@@ -86,7 +86,7 @@ export default function VendorProfilePage() {
   const [email, setEmail] = useState("");
   const [igHandle, setIgHandle] = useState("");
   const [fbHandle, setFbHandle] = useState("");
-  const [xHandle, setXHandle] = useState("");
+  // const [xHandle, setXHandle] = useState("");
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -108,7 +108,7 @@ export default function VendorProfilePage() {
     setEmail(vendor.email ?? "");
     setIgHandle(vendor.socials?.instagram ?? "");
     setFbHandle(vendor.socials?.facebook ?? "");
-    setXHandle(vendor.socials?.x ?? "");
+    // setXHandle(vendor.socials?.x ?? "");
   }, [vendor]);
 
   async function handleSave() {
@@ -120,7 +120,7 @@ export default function VendorProfilePage() {
         socials: {
           ...(igHandle ? { instagram: igHandle } : {}),
           ...(fbHandle ? { facebook: fbHandle } : {}),
-          ...(xHandle ? { x: xHandle } : {}),
+          // ...(xHandle ? { x: xHandle } : {}),
         },
       });
       setSaved(true);
@@ -229,12 +229,12 @@ export default function VendorProfilePage() {
               <SocialInput prefix="fb/" placeholder="mamacasskitchen" value={fbHandle} onChange={setFbHandle} />
             </div>
           </Row>
-          <Row>
+          {/* <Row>
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-semibold uppercase tracking-widest text-[var(--mute)]">X (Twitter)</label>
               <SocialInput prefix="@" placeholder="mamacasskitchen" value={xHandle} onChange={setXHandle} />
             </div>
-          </Row>
+          </Row> */}
         </SectionPanel>
 
         {/* Danger */}
