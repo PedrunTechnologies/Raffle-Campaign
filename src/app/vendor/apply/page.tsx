@@ -1,22 +1,19 @@
 "use client";
 
+import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import Button from "@/components/ui/Button";
 import Logo from "@/components/ui/Logo";
 import Input from "@/components/ui/Input";
 import SelectField from "@/components/ui/SelectField";
 import { FormField, Badge } from "@/components/vendor/VendorUI";
-import Link from "next/link";
-import { useState } from "react";
-
-
-
-
-
-
-
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { adminDb } from "@/lib/firebase-admin"; // ← server action handles this
+
+
+
+
 
 /* NOTE: The actual Firestore write happens in POST /api/vendor/apply
    (a server action / API route) so we never expose the Admin SDK to the browser. */
@@ -74,6 +71,8 @@ function Row({ children }: { children: React.ReactNode }) {
 
 
 export default function ApplyPage() {
+  const router = useRouter();
+
   /* business */
   const [name, setName] = useState("");
   const [businessType, setBusinessType] = useState("");
@@ -97,7 +96,6 @@ export default function ApplyPage() {
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [submitted, setSubmitted] = useState(false);
 
 
 
@@ -110,6 +108,7 @@ export default function ApplyPage() {
     setSubmitting(true);
 
     try {
+      // 1. Create the vendor account
       const res = await fetch("/api/vendor/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -120,40 +119,34 @@ export default function ApplyPage() {
           socials: {
             ...(igHandle ? { instagram: igHandle } : {}),
             ...(fbHandle ? { facebook: fbHandle } : {}),
-            // ...(xHandle ? { x: xHandle } : {}),
           },
         }),
       });
 
       const data = await res.json() as { error?: string };
       if (!res.ok) { setError(data.error ?? "Submission failed."); return; }
-      setSubmitted(true);
+
+      // 2. Sign in with Firebase using the credentials just submitted
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const idToken = await cred.user.getIdToken();
+
+      // 3. Exchange for a session cookie
+      const sessionRes = await fetch("/api/vendor/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+
+      const sessionData = await sessionRes.json() as { error?: string };
+      if (!sessionRes.ok) { setError(sessionData.error ?? "Login failed."); return; }
+
+      // 4. Redirect to the vendor dashboard
+      router.push("/vendor/dashboard");
     } catch {
       setError("Network error. Please try again.");
     } finally {
       setSubmitting(false);
     }
-  }
-
-  if (submitted) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--bg)] px-6 text-center">
-        <div className="mb-5 text-5xl">🎉</div>
-        <h2
-          className="mb-3 text-3xl font-medium"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          Application submitted.
-        </h2>
-        <p className="mb-8 max-w-md text-[var(--ink-soft)]">
-          A temporary password has been sent to the contact email, please use the password and contact email to log in.
-          The password can be changed after log in.
-        </p>
-        <Link href="/vendor/login">
-          <Button variant="ghost">Back to sign in</Button>
-        </Link>
-      </div>
-    );
   }
 
   return (
@@ -180,7 +173,7 @@ export default function ApplyPage() {
             <em className="italic text-[var(--blue)]">Pedrun vendor</em>
           </h1>
           <p className="text-[var(--ink-soft)]">
-            Approval typically takes 2–3 working days.
+            All fields except the social media fields are required.
           </p>
         </div>
 

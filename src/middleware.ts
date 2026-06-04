@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * Routes that require authentication.
- * Any path starting with these prefixes will be protected.
+ * Participant routes that require authentication.
  */
-const PROTECTED_PREFIXES = [
+
+const PARTICIPANT_PROTECTED = [
   "/tasks",
   "/voucher",
   "/result",
@@ -12,31 +12,90 @@ const PROTECTED_PREFIXES = [
   "/link-socials",
   "/voucher-detail",
   "/closed",
+  "/dashboard",
 ];
 
 /**
- * Routes only accessible when NOT authenticated (redirect to / if already logged in).
+ * Participant routes only accessible when NOT authenticated.
  */
-const AUTH_ONLY_ROUTES = ["/login", "/signup"];
+const PARTICIPANT_AUTH_ONLY = ["/login", "/signup"];
+
+/**
+ * Vendor routes that require authentication.
+ */
+const VENDOR_PROTECTED = [
+  "/vendor/dashboard",
+  "/vendor/opt-in",
+  "/vendor/profile",
+  "/vendor/redemptions",
+  "/vendor/settings",
+  "/vendor/verify",
+];
+
+/**
+ * Vendor routes only accessible when NOT authenticated.
+ */
+const VENDOR_AUTH_ONLY = ["/vendor/login", "/vendor/apply"];
+
+/**
+ * Admin login page — the only admin route accessible without a token.
+ */
+const ADMIN_AUTH_ONLY = ["/admin/login"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Read the Firebase ID token stored as a cookie after login
-  const token = req.cookies.get("pedrun_token")?.value;
+  // ── Admin routes ───────────────────────────────────────────────
+  if (pathname.startsWith("/admin")) {
+    const adminToken = req.cookies.get("pedrun_admin_token")?.value;
+    const isAdminAuthOnly = ADMIN_AUTH_ONLY.some((p) => pathname.startsWith(p));
 
-  const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
-  const isAuthOnly  = AUTH_ONLY_ROUTES.some((p) => pathname.startsWith(p));
+    if (!isAdminAuthOnly && !adminToken) {
+      const loginUrl = new URL("/admin/login", req.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
 
-  // Not authenticated, trying to visit a protected page → redirect to login
-  if (isProtected && !token) {
+    if (isAdminAuthOnly && adminToken) {
+      return NextResponse.redirect(new URL("/admin/overview", req.url));
+    }
+
+    return NextResponse.next();
+  }
+
+  // ── Vendor routes ──────────────────────────────────────────────
+  const isVendorProtected = VENDOR_PROTECTED.some((p) => pathname.startsWith(p));
+  const isVendorAuthOnly = VENDOR_AUTH_ONLY.some((p) => pathname.startsWith(p));
+
+  if (isVendorProtected || isVendorAuthOnly) {
+    const vendorToken = req.cookies.get("pedrun_vendor_token")?.value;
+
+    if (isVendorProtected && !vendorToken) {
+      const loginUrl = new URL("/vendor/login", req.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    if (isVendorAuthOnly && vendorToken) {
+      return NextResponse.redirect(new URL("/vendor/dashboard", req.url));
+    }
+
+    return NextResponse.next();
+  }
+
+  // ── Participant routes ─────────────────────────────────────────
+  const participantToken = req.cookies.get("pedrun_token")?.value;
+
+  const isParticipantProtected = PARTICIPANT_PROTECTED.some((p) => pathname.startsWith(p));
+  const isParticipantAuthOnly = PARTICIPANT_AUTH_ONLY.some((p) => pathname.startsWith(p));
+
+  if (isParticipantProtected && !participantToken) {
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Already authenticated, trying to visit login/signup → send home
-  if (isAuthOnly && token) {
+  if (isParticipantAuthOnly && participantToken) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
@@ -54,3 +113,4 @@ export const config = {
     "/((?!_next/static|_next/image|favicon.ico|api/).*)",
   ],
 };
+
