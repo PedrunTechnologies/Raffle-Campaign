@@ -205,7 +205,7 @@ export default function OptInPage() {
           You're in for cycle #{status.cycleNumber}.
         </h2>
         <p className="max-w-sm text-[var(--ink-soft)]">
-          {grand} voucher{grand !== 1 ? "s" : ""} added to the pool —{" "}
+          <strong className="text-[var(--ink)]">{grand} voucher{grand !== 1 ? "s" : ""}</strong> added to the pool —{" "}
           {freeTotal > 0 && `${freeTotal} free`}
           {freeTotal > 0 && discTotal > 0 && ", "}
           {discTotal > 0 && `${discTotal} discounted`}.
@@ -213,7 +213,7 @@ export default function OptInPage() {
 
 
 
-        <p className="max-w-sm text-[var(--ink-soft)]">
+        {/* <p className="max-w-sm text-[var(--ink-soft)]">
           <strong className="text-[var(--ink)]">{grandTotal} vouchers</strong> added
           to the pool
           {includeFree && (
@@ -223,7 +223,7 @@ export default function OptInPage() {
             <>, {discountTotalQty} discounted across {discountTiers.length} tier{discountTiers.length > 1 ? "s" : ""}</>
           )}
           . Window opens at 09:00 WAT tomorrow.
-        </p>
+        </p> */}
       </div>
     );
   }
