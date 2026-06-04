@@ -67,8 +67,8 @@ export default function NewTaskPage() {
   const { user } = useAdminAuth();
   const router = useRouter();
 
-  const [platform, setPlatform] = useState("");
-  const [taskType, setTaskType] = useState("");
+  const [platform, setPlatform] = useState("instagram");
+  const [taskType, setTaskType] = useState("follow");
   const [targetUrl, setTargetUrl] = useState("");
   const [description, setDescription] = useState("");
   const [urlError, setUrlError] = useState("");
@@ -256,7 +256,6 @@ export default function NewTaskPage() {
           <Link href="/admin/tasks">
             <Button variant="ghost">Cancel</Button>
           </Link>
-          {`is ${saving}`}
           <Button type="submit" disabled={saving}>
             {saving ? "Creating…" : "Create task"}
           </Button>
