@@ -53,6 +53,7 @@ async function finalizeAuth(
   return user;
 }
 
+
 /* ── email / password ─────────────────────────────────────────────────── */
 
 export async function signUpWithEmail(params: {
@@ -61,22 +62,60 @@ export async function signUpWithEmail(params: {
   phone: string;
   password: string;
 }) {
-  const cred = await createUserWithEmailAndPassword(
-    auth,
-    params.email,
-    params.password
-  );
 
-  // Attach display name to Firebase Auth profile
-  await updateProfile(cred.user, { displayName: params.name });
+  let cred: UserCredential;
 
-  // await finalizeAuth(cred);
+  try {
+    cred = await createUserWithEmailAndPassword(auth, params.email, params.password);
+    await updateProfile(cred.user, { displayName: params.name });
+  } catch (err: unknown) {
+    const code = (err as { code?: string })?.code;
 
-  await finalizeAuth(cred, {
-    phone: params.phone,
-    type: "signup",
-  });
+    if (code !== "auth/email-already-in-use") throw err;
 
+    // Auth account already exists — sign in to get the uid and check Firestore
+    let existingCred: UserCredential;
+    try {
+      existingCred = await signInWithEmailAndPassword(auth, params.email, params.password);
+    } catch {
+      // Wrong password or some other auth error — surface the original duplicate error
+      throw err;
+    }
+
+    const uid = existingCred.user.uid;
+
+    const [userSnap, vendorSnap] = await Promise.all([
+      getDoc(doc(db, "users", uid)),
+      // vendors collection uses a separate doc id, query by uid field
+      (async () => {
+        const { collection, query, where, limit, getDocs } = await import("firebase/firestore");
+        const q = query(collection(db, "vendors"), where("uid", "==", uid), limit(1));
+        return getDocs(q);
+      })(),
+    ]);
+
+    if (!userSnap.exists() && vendorSnap.empty) {
+      // Orphaned auth account — no Firestore doc in either collection.
+      // Recover by writing the users doc and continuing as normal.
+      await updateProfile(existingCred.user, { displayName: params.name });
+      await finalizeAuth(existingCred, { phone: params.phone, type: "signup" });
+      return { uid };
+    }
+
+    if (!vendorSnap.empty) {
+      // Belongs to a vendor account
+      await signOut(auth);
+      throw Object.assign(new Error("Email used by vendor."), {
+        code: "auth/email-used-by-vendor",
+      });
+    }
+
+    // Exists in users — genuine duplicate, sign out and surface the error
+    await signOut(auth);
+    throw err;
+  }
+
+  await finalizeAuth(cred, { phone: params.phone, type: "signup" });
   return { uid: cred.user.uid };
 }
 

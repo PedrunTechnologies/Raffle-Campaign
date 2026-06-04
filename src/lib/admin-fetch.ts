@@ -36,11 +36,20 @@ interface FetchOptions {
     signal?: AbortSignal;
 }
 
+async function clearAdminSession(): Promise<void> {
+    try {
+        await fetch("/api/admin/auth/session", { method: "DELETE", credentials: "include" });
+    } catch {
+        // best-effort
+    }
+}
+
 
 async function refreshAdminSession(): Promise<void> {
     const user = auth.currentUser;
 
     if (!user) {
+        await clearAdminSession();
         throw new Error("No authenticated user");
     }
 
@@ -141,6 +150,7 @@ async function adminFetch<T = unknown>(
             res.status === 401 &&
             (message === "Invalid token" || message === "Unauthorized")
         ) {
+            await clearAdminSession();
             window.location.href = "/admin/login";
             // logout();
         }
@@ -186,3 +196,4 @@ export function adminDelete<T = unknown>(
 ): Promise<T> {
     return adminFetch<T>("DELETE", url, undefined, opts);
 }
+

@@ -12,15 +12,15 @@ import { signUpWithEmail, signInWithGoogle } from "@/lib/auth-actions";
 
 
 export default function SignupPage() {
-  const router       = useRouter();
-  const redirect     = "/link-socials";
+  const router = useRouter();
+  const redirect = "/link-socials";
 
-  const [name,     setName]     = useState("");
-  const [email,    setEmail]    = useState("");
-  const [phone,    setPhone]    = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [error,    setError]    = useState("");
-  const [loading,  setLoading]  = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   /* ── email / password signup ── */
   async function handleSubmit(e: React.FormEvent) {
@@ -120,11 +120,11 @@ export default function SignupPage() {
 function friendlyError(err: unknown): string {
   const code = (err as { code?: string })?.code ?? "";
   const MAP: Record<string, string> = {
-    "auth/email-already-in-use":    "An account with this email already exists.",
-    "auth/invalid-email":           "Please enter a valid email address.",
-    "auth/weak-password":           "Password must be at least 8 characters.",
-    "auth/popup-closed-by-user":    "Google sign-in was cancelled.",
-    "auth/network-request-failed":  "Network error. Check your connection.",
+    "auth/email-already-in-use": "An account with this email already exists.",
+    "auth/invalid-email": "Please enter a valid email address.",
+    "auth/weak-password": "Password must be at least 8 characters.",
+    "auth/popup-closed-by-user": "Google sign-in was cancelled.",
+    "auth/network-request-failed": "Network error. Check your connection.",
   };
   return MAP[code] ?? "Something went wrong. Please try again.";
 }

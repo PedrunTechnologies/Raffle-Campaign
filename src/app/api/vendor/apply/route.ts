@@ -32,22 +32,48 @@ export async function POST(req: NextRequest) {
     }
 
     /* ── Check for duplicate email ── */
+    let existingUid: string | null = null;
     try {
-      await adminAuth.getUserByEmail(body.email);
-      return NextResponse.json(
-        { error: "An account with this email already exists." },
-        { status: 409 }
-      );
+      const existing = await adminAuth.getUserByEmail(body.email);
+      existingUid = existing.uid;
     } catch {
-      // getUserByEmail throws if not found — that's what we want
+      // getUserByEmail throws if not found — that's fine, we'll create a new account below
     }
 
-    /* ── Create Firebase Auth user ── */
-    const userRecord = await adminAuth.createUser({
-      email: body.email,
-      password: body.password,
-      displayName: body.contactName,
-    });
+    if (existingUid) {
+      // Check which collection this uid belongs to
+      const [userSnap, vendorSnap] = await Promise.all([
+        adminDb.collection("users").doc(existingUid).get(),
+        adminDb.collection("vendors").where("uid", "==", existingUid).limit(1).get(),
+      ]);
+
+      if (userSnap.exists) {
+        // Belongs to a participant — clear conflict
+        return NextResponse.json(
+          { error: "This email is already registered as a participant account." },
+          { status: 409 }
+        );
+      }
+
+      if (!vendorSnap.empty) {
+        // Already a vendor with a Firestore doc — normal duplicate
+        return NextResponse.json(
+          { error: "An account with this email already exists." },
+          { status: 409 }
+        );
+      }
+
+      // Auth account exists but no Firestore doc — orphaned account, recover it below
+    }
+
+    /* ── Create or reuse Firebase Auth user ── */
+    const userRecord = existingUid
+      ? await adminAuth.getUser(existingUid)
+      : await adminAuth.createUser({
+        email: body.email,
+        password: body.password,
+        displayName: body.contactName,
+      });
 
     /* ── Create vendor Firestore doc ── */
     const vendorRef = adminDb.collection("vendors").doc();

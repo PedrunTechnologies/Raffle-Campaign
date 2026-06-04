@@ -20,6 +20,14 @@ interface FetchOptions {
   signal?: AbortSignal;
 }
 
+async function clearParticipantSession(): Promise<void> {
+  try {
+    await fetch("/api/auth/session", { method: "DELETE", credentials: "include" });
+  } catch {
+    // best-effort — proceed to redirect even if this fails
+  }
+}
+
 async function refreshSession(): Promise<void> {
   const user = auth.currentUser;
 
@@ -39,6 +47,7 @@ async function refreshSession(): Promise<void> {
 
   if (!freshUser) {
     // window.location.href = "/login";
+    await clearParticipantSession();
     throw new ParticipantFetchError(401, "Session expired.");
   }
 
@@ -100,6 +109,7 @@ async function participantFetch<T = unknown>(
       res.status === 401 &&
       (message === "Invalid token" || message === "Unauthorized")
     ) {
+      await clearParticipantSession();
       window.location.href = "/login";
     }
 
@@ -120,3 +130,5 @@ export const participantPatch = <T = unknown>(url: string, body: unknown, opts?:
 
 export const participantDelete = <T = unknown>(url: string, opts?: FetchOptions) =>
   participantFetch<T>("DELETE", url, undefined, opts);
+
+

@@ -26,6 +26,14 @@ interface FetchOptions {
 }
 
 
+async function clearVendorSession(): Promise<void> {
+  try {
+    await fetch("/api/vendor/auth/session", { method: "DELETE", credentials: "include" });
+  } catch {
+    // best-effort
+  }
+}
+
 function getCurrentUser(): Promise<User | null> {
   return new Promise((resolve) => {
     // If already resolved, return immediately
@@ -125,6 +133,7 @@ async function vendorFetch<T = unknown>(
       res.status === 401 &&
       (message === "Invalid token" || message === "Unauthorized")
     ) {
+      await clearVendorSession();
       window.location.href = "/vendor/login";
     }
 
@@ -146,3 +155,4 @@ export const vendorPatch = <T = unknown>(url: string, body: unknown) =>
 
 export const vendorDelete = <T = unknown>(url: string) =>
   vendorFetch<T>("DELETE", url);
+
