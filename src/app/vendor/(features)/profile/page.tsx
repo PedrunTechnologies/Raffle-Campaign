@@ -238,7 +238,7 @@ export default function VendorProfilePage() {
         </SectionPanel>
 
         {/* Danger */}
-        <SectionPanel title="Account">
+        {/* <SectionPanel title="Account">
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[var(--blue)]/20 bg-[var(--blue)]/5 px-5 py-4">
             <div>
               <p className="text-sm font-semibold text-[var(--ink)]">Deactivate vendor account</p>
@@ -248,7 +248,7 @@ export default function VendorProfilePage() {
             </div>
             <Button variant="ghost">Request deactivation</Button>
           </div>
-        </SectionPanel>
+        </SectionPanel> */}
 
       </div>
     </>

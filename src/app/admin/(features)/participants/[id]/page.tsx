@@ -346,7 +346,7 @@ export default function ParticipantDetailPage() {
 
 
       {/* Task audit — this cycle */}
-      <div className="mt-5">
+      {/* <div className="mt-5">
         <Panel title="Task audit — cycle #214" right="All auto-verified via API" noPadding>
           <Table headers={["Task", "Status", "Verified at", "Method"]}>
             {TASKS.map((t) => (
@@ -367,10 +367,10 @@ export default function ParticipantDetailPage() {
             ))}
           </Table>
         </Panel>
-      </div>
+      </div> */}
 
       {/* Voucher history */}
-      <div className="mt-5">
+      {/* {<div className="mt-5">
         <Panel title="Voucher history" noPadding>
           <Table headers={["Cycle", "Date", "Code", "Result", "Status"]}>
             {VOUCHER_HISTORY.map((v) => (
@@ -380,14 +380,13 @@ export default function ParticipantDetailPage() {
                 <Td mono>{v.code}</Td>
                 <Td>{v.result}</Td>
                 <Td>
-                  {/* {v.status} */}
                   <Badge variant={v.status === "Won" ? "lime" : v.status === "Redeemed" ? "ok" : v.status === "Expired" ? "info" : "info"}>{v.status}</Badge>
                 </Td>
               </Tr>
             ))}
           </Table>
         </Panel>
-      </div>
+      </div> */}
 
       {/* ── Confirmation modal ── */}
       {modal && (

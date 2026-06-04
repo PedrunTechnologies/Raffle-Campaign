@@ -11,12 +11,12 @@ import { useState } from "react";
 import { signInWithEmail, signInWithGoogle } from "@/lib/auth-actions";
 
 export default function LoginPage() {
-  const router       = useRouter();
-  const redirect     = "/dashboard";
+  const router = useRouter();
+  const redirect = "/dashboard";
 
-  const [email,   setEmail]   = useState("");
-  const [password,setPassword]= useState("");
-  const [error,   setError]   = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -97,13 +97,15 @@ export default function LoginPage() {
 function friendlyError(err: unknown): string {
   const code = (err as { code?: string })?.code ?? "";
   const MAP: Record<string, string> = {
-    "auth/user-not-found":          "No account found with this email.",
-    "auth/wrong-password":          "Incorrect password. Try again.",
-    "auth/invalid-credential":      "Incorrect email or password.",
-    "auth/too-many-requests":       "Too many attempts. Please wait a moment.",
-    "auth/popup-closed-by-user":    "Google sign-in was cancelled.",
-    "auth/network-request-failed":  "Network error. Check your connection.",
+    "auth/user-not-found": "No account found with this email.",
+    "auth/wrong-password": "Incorrect password. Try again.",
+    "auth/invalid-credential": "Incorrect email or password.",
+    "auth/too-many-requests": "Too many attempts. Please wait a moment.",
+    "auth/popup-closed-by-user": "Google sign-in was cancelled.",
+    "auth/network-request-failed": "Network error. Check your connection.",
+    "auth/user-not-in-users-collection": "No participant with this account found. Please sign up first.",
   };
   return MAP[code] ?? "Something went wrong. Please try again.";
 }
+
 

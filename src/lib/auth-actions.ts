@@ -2,12 +2,14 @@
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signOut,
   updateProfile,
   GoogleAuthProvider,
   signInWithPopup,
   type UserCredential,
 } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 
 /* ── helpers ─────────────────────────────────────────────────────────── */
 
@@ -25,10 +27,18 @@ async function finalizeAuth(
 ) {
   const { user } = cred;
 
+  // For sign-ins (not sign-ups), verify the user exists in the "users" collection.
+  if (extra?.type !== "signup") {
+    const userSnap = await getDoc(doc(db, "users", user.uid));
+    if (!userSnap.exists()) {
+      // Sign the user out of Firebase Auth so they're not left in a half-authed state.
+      await signOut(auth);
+      throw Object.assign(new Error("Account not found."), {
+        code: "auth/user-not-in-users-collection",
+      });
+    }
+  }
 
-  // Mint a short-lived ID token and store it in a cookie so
-  // the Edge middleware can read it without hitting Firestore.
-  // const idToken = await user.getIdToken();
   const idToken = await user.getIdToken(true);
 
   await fetch("/api/auth/session", {
@@ -94,3 +104,5 @@ export async function signInWithGoogle() {
   await finalizeAuth(cred);
   return { uid: cred.user.uid };
 }
+
+

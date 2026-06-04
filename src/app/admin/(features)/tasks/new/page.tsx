@@ -13,20 +13,20 @@ import { HiOutlineArrowLeft, HiOutlineExternalLink } from "react-icons/hi";
 
 const PLATFORM_OPTIONS = [
   { value: "instagram", label: "Instagram" },
-  { value: "facebook",  label: "Facebook"  },
-  { value: "x",         label: "X (Twitter)" },
-  { value: "tiktok",    label: "TikTok"    },
+  { value: "facebook", label: "Facebook" },
+  { value: "x", label: "X (Twitter)" },
+  { value: "tiktok", label: "TikTok" },
 ];
 
 const TASK_TYPE_OPTIONS = [
-  { value: "follow",           label: "Follow"          },
-  { value: "share",            label: "Share"           },
-  { value: "like",             label: "Like"            },
-  { value: "comment",          label: "Comment"         },
-  { value: "like_and_comment", label: "Like & Comment"  },
-  { value: "repost",           label: "Repost"          },
-  { value: "tag_friends",      label: "Tag Friends"     },
-  { value: "story_share",      label: "Story Share"     },
+  { value: "follow", label: "Follow" },
+  { value: "share", label: "Share" },
+  { value: "like", label: "Like" },
+  { value: "comment", label: "Comment" },
+  { value: "like_and_comment", label: "Like & Comment" },
+  { value: "repost", label: "Repost" },
+  { value: "tag_friends", label: "Tag Friends" },
+  { value: "story_share", label: "Story Share" },
 ];
 
 /* URL type: follow tasks target a profile; engagement tasks target a post */
@@ -36,9 +36,9 @@ function urlHint(taskType: string, platform: string): string {
   if (PROFILE_TASKS.has(taskType)) {
     const examples: Record<string, string> = {
       instagram: "https://www.instagram.com/pedrun_deliveries/",
-      facebook:  "https://www.facebook.com/pedrun_deliveries",
-      x:         "https://x.com/pedrun_deliveries",
-      tiktok:    "https://www.tiktok.com/@pedrun_deliveries",
+      facebook: "https://www.facebook.com/pedrun_deliveries",
+      x: "https://x.com/pedrun_deliveries",
+      tiktok: "https://www.tiktok.com/@pedrun_deliveries",
     };
     return `Profile URL — e.g. ${examples[platform] ?? "https://…"}`;
   }
@@ -46,33 +46,33 @@ function urlHint(taskType: string, platform: string): string {
 }
 
 function descriptionTemplate(taskType: string, platform: string, url: string): string {
-  const p  = PLATFORM_OPTIONS.find((o) => o.value === platform)?.label ?? platform;
+  const p = PLATFORM_OPTIONS.find((o) => o.value === platform)?.label ?? platform;
   const handle = url ? ` (@${url.split("/").filter(Boolean).pop()})` : "";
   switch (taskType) {
-    case "follow":           return `Follow us on ${p}${handle}`;
-    case "share":            return `Share today's campaign post on ${p}`;
-    case "like":             return `Like our post on ${p}`;
-    case "comment":          return `Leave a comment on our ${p} post`;
+    case "follow": return `Follow us on ${p}${handle}`;
+    case "share": return `Share today's campaign post on ${p}`;
+    case "like": return `Like our post on ${p}`;
+    case "comment": return `Leave a comment on our ${p} post`;
     case "like_and_comment": return `Like and comment on our ${p} post`;
-    case "repost":           return `Repost our post on ${p}`;
-    case "tag_friends":      return `Tag 2 friends in the comments on ${p}`;
-    case "story_share":      return `Share the post to your ${p} story`;
-    default:                 return "";
+    case "repost": return `Repost our post on ${p}`;
+    case "tag_friends": return `Tag 2 friends in the comments on ${p}`;
+    case "story_share": return `Share the post to your ${p} story`;
+    default: return "";
   }
 }
 
 /* ── Page ─────────────────────────────────────────────────────────── */
 
 export default function NewTaskPage() {
-  const { user }  = useAdminAuth();
-  const router    = useRouter();
+  const { user } = useAdminAuth();
+  const router = useRouter();
 
-  const [platform,    setPlatform]    = useState("instagram");
-  const [taskType,    setTaskType]    = useState("follow");
-  const [targetUrl,   setTargetUrl]   = useState("");
+  const [platform, setPlatform] = useState("");
+  const [taskType, setTaskType] = useState("");
+  const [targetUrl, setTargetUrl] = useState("");
   const [description, setDescription] = useState("");
-  const [urlError,    setUrlError]    = useState("");
-  const [saving,      setSaving]      = useState(false);
+  const [urlError, setUrlError] = useState("");
+  const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState("");
 
   // Auto-fill description when platform/type changes (only if currently matches template)
@@ -103,13 +103,13 @@ export default function NewTaskPage() {
     if (!validateUrl(targetUrl)) return;
     setServerError("");
     setSaving(true);
-    
+
     try {
       const token = await user!.getIdToken();
-      const res   = await fetch("/api/admin/tasks", {
-        method:  "POST",
+      const res = await fetch("/api/admin/tasks", {
+        method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body:    JSON.stringify({ platform, taskType, targetUrl, description }),
+        body: JSON.stringify({ platform, taskType, targetUrl, description }),
       });
 
       if (!res.ok) {
@@ -176,7 +176,7 @@ export default function NewTaskPage() {
                   type="url"
                   value={targetUrl}
                   onChange={(e) => { setTargetUrl(e.target.value); validateUrl(e.target.value); }}
-                  onBlur={(e)   => validateUrl(e.target.value)}
+                  onBlur={(e) => validateUrl(e.target.value)}
                   placeholder="https://…"
                   required
                   className={`
@@ -256,7 +256,8 @@ export default function NewTaskPage() {
           <Link href="/admin/tasks">
             <Button variant="ghost">Cancel</Button>
           </Link>
-          <Button disabled={saving}>
+          {`is ${saving}`}
+          <Button type="submit" disabled={saving}>
             {saving ? "Creating…" : "Create task"}
           </Button>
         </div>
