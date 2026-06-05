@@ -199,7 +199,7 @@ function VoucherDetailControl() {
         } else {
           setVoucher(vouchers[0] ?? null);
         }
-        
+
         setLoading(false);
       })
       .catch((err) => {
@@ -226,10 +226,48 @@ function VoucherDetailControl() {
               <Link href="/dashboard"><Button variant="ghost">← Back</Button></Link>
             </div>
           ) : voucher.type === "free" ? (
-            <FreeVoucherCard voucher={voucher} />
+            <>
+              <FreeVoucherCard voucher={voucher} />
+              <div className="mt-6 rounded-2xl border border-[var(--line)] bg-[var(--grey-50)] px-5 py-4">
+                <p className="mb-1 text-sm font-semibold text-[var(--ink)]">
+                  Need help?
+                </p>
+                <p className="mb-3 text-xs leading-relaxed text-[var(--ink-soft)]">
+                  Having trouble completing a task or redeeming a voucher? Reach out to
+                  our customer support and we&apos;ll sort it out for you. You can take
+                  a screenshot of this page to share with us for faster assistance.
+                </p>
+                <a
+                  href="tel:+2347049906561"
+                  className="inline-flex items-center gap-2 rounded-xl bg-white border border-[var(--line)] px-4 py-2.5 text-sm font-semibold text-[var(--ink)] transition-all hover:border-[var(--grey-200)] hover:shadow-sm active:scale-95"
+                >
+                  <span className="text-base">📞</span>
+                  +234 704 990 6561
+                </a>
+              </div>
+            </>
             // <RaffleVoucherCard voucher={voucher} compact />
           ) : (
-            <DiscountVoucherView voucher={voucher} />
+            <>
+              <DiscountVoucherView voucher={voucher} />
+              <div className="mt-6 rounded-2xl border border-[var(--line)] bg-[var(--grey-50)] px-5 py-4">
+                <p className="mb-1 text-sm font-semibold text-[var(--ink)]">
+                  Need help?
+                </p>
+                <p className="mb-3 text-xs leading-relaxed text-[var(--ink-soft)]">
+                  Having trouble completing a task or redeeming a voucher? Reach out to
+                  our customer support and we&apos;ll sort it out for you. You can take
+                  a screenshot of this page to share with us for faster assistance.
+                </p>
+                <a
+                  href="tel:+2347049906561"
+                  className="inline-flex items-center gap-2 rounded-xl bg-white border border-[var(--line)] px-4 py-2.5 text-sm font-semibold text-[var(--ink)] transition-all hover:border-[var(--grey-200)] hover:shadow-sm active:scale-95"
+                >
+                  <span className="text-base">📞</span>
+                  +234 704 990 6561
+                </a>
+              </div>
+            </>
             // <DiscountVoucherCard voucher={voucher} />
           )}
         </div>
