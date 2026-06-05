@@ -92,6 +92,12 @@ export async function GET(req: NextRequest) {
       cycleState: { status: "draw_done", cycle, voucher },
     } satisfies ParticipantDashboardData);
   }
+  if (voucherSnap.empty && cycle.drawLogId) {
+    return NextResponse.json({
+      profile,
+      cycleState: { status: "no_cycle" },
+    } satisfies ParticipantDashboardData);
+  }
 
   /* ── 6. No voucher yet — show tasks (draw hasn't run) ── */
   const qualified = completedTaskIds.length >= cycle.minTasksToQualify;
