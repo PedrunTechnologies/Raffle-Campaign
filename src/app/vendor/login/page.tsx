@@ -6,11 +6,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
-// import { auth } from "@/lib/firebase";
-
-
 import { auth } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
+// import { onAuthStateChanged } from "firebase/auth";
 
 
 
@@ -36,9 +33,9 @@ export default function VendorLoginPage() {
   const [loading, setLoading] = useState(false);
 
   // After signInWithEmailAndPassword succeeds:
-  onAuthStateChanged(auth, (user) => {
-    console.log("Auth state:", user?.email, user?.uid);
-  });
+  // onAuthStateChanged(auth, (user) => {
+  //   console.log("Auth state:", user?.email, user?.uid);
+  // });
 
 
   async function handleSubmit(e: React.FormEvent) {
@@ -151,7 +148,7 @@ export default function VendorLoginPage() {
           </div>
 
           {/* Password */}
-          <div className="mb-6 flex flex-col gap-1.5">
+          <div className="mb-2 flex flex-col gap-1.5">
             <label className="text-[11px] font-semibold uppercase tracking-widest text-[var(--mute)]">
               Password
             </label>
@@ -169,6 +166,15 @@ export default function VendorLoginPage() {
                 focus:border-[var(--blue)] focus:ring-2 focus:ring-[var(--blue)]/10
               "
             />
+          </div>
+
+          <div className="mb-6 flex justify-end">
+            <Link
+              href="/vendor/forgot-password"
+              className="text-sm text-[var(--blue)] underline underline-offset-2"
+            >
+              Forgot password?
+            </Link>
           </div>
 
           {error && (

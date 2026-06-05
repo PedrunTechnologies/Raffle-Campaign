@@ -18,7 +18,7 @@ const PARTICIPANT_PROTECTED = [
 /**
  * Participant routes only accessible when NOT authenticated.
  */
-const PARTICIPANT_AUTH_ONLY = ["/login", "/signup"];
+const PARTICIPANT_AUTH_ONLY = ["/login", "/signup", "/forgot-password"];
 
 /**
  * Vendor routes that require authentication.
@@ -35,7 +35,7 @@ const VENDOR_PROTECTED = [
 /**
  * Vendor routes only accessible when NOT authenticated.
  */
-const VENDOR_AUTH_ONLY = ["/vendor/login", "/vendor/apply"];
+const VENDOR_AUTH_ONLY = ["/vendor/login", "/vendor/apply", "/vendor/forgot-password"];
 
 /**
  * Admin login page — the only admin route accessible without a token.

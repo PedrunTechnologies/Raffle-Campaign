@@ -23,27 +23,32 @@ export function VendorAuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
 
-
-  const loadVendor = useCallback(async (u: User) => {
+  const loadVendor = useCallback(async (_u: User) => {
     try {
-      const res = await fetch("/api/vendor/me", { headers: { Authorization: `Bearer ${await u.getIdToken()}` }, });
-
+      // Use credentials:"include" so the HttpOnly cookie is sent automatically.
+      // Never pass a Bearer token here — the cookie and the context must stay
+      // in sync with the same auth mechanism used by vendorFetch everywhere else.
+      const res = await fetch("/api/vendor/me", { credentials: "include" });
 
       if (res.ok) {
         setVendor(await res.json() as VendorRecord);
-      } else {
-        // Signed in to Firebase but not a vendor — sign out
+      } else if (res.status === 401 || res.status === 403) {
+        // The cookie is missing, invalid, or this user has no vendor doc.
+        // Only sign out of Firebase on a definitive auth rejection —
+        // NOT on transient errors (500, network) to avoid breaking the session.
         await signOut(auth);
         setVendor(null);
       }
+      // For any other status (500, network error etc.) we leave vendor as null
+      // and let individual pages handle the empty state — no signOut.
     } catch {
+      // Network error — leave vendor null, don't sign out
       setVendor(null);
     }
   }, []);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
-      console.log(u);
       setUser(u);
       // if (u) await loadVendor(u);
       // else setVendor(null);
@@ -56,6 +61,7 @@ export function VendorAuthProvider({ children }: { children: ReactNode }) {
     });
     return unsub;
   }, [loadVendor]);
+
 
   const logout = useCallback(async () => {
     await fetch("/api/vendor/auth/session", { method: "DELETE", credentials: "include" });
@@ -70,8 +76,12 @@ export function VendorAuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+
 export function useVendorAuth() {
   const ctx = useContext(VendorAuthContext);
   if (!ctx) throw new Error("useVendorAuth must be used inside <VendorAuthProvider>");
   return ctx;
 }
+
+
+

@@ -50,15 +50,23 @@ function getCurrentUser(): Promise<User | null> {
 }
 
 async function refreshVendorSession(): Promise<void> {
-  const user = await getCurrentUser(); // ← await instead of sync access
+  const user = await getCurrentUser();
 
   if (!user) {
-    // No user in Firebase at all — redirect to login
+    await clearVendorSession();
     window.location.href = "/vendor/login";
     throw new VendorFetchError(401, "Session expired. Please log in again.");
   }
 
-  const token = await user.getIdToken(true);
+  let token: string;
+  try {
+    token = await user.getIdToken(true);
+  } catch {
+    // Firebase Auth session itself has expired — clear cookie and redirect
+    await clearVendorSession();
+    window.location.href = "/vendor/login";
+    throw new VendorFetchError(401, "Session expired. Please log in again.");
+  }
 
   const res = await fetch("/api/vendor/auth/session", {
     method: "POST",
@@ -68,7 +76,8 @@ async function refreshVendorSession(): Promise<void> {
   });
 
   if (!res.ok) {
-    // window.location.href = "/vendor/login";
+    await clearVendorSession();
+    window.location.href = "/vendor/login";
     throw new VendorFetchError(401, "Failed to refresh session. Please log in again.");
   }
 }
@@ -155,4 +164,5 @@ export const vendorPatch = <T = unknown>(url: string, body: unknown) =>
 
 export const vendorDelete = <T = unknown>(url: string) =>
   vendorFetch<T>("DELETE", url);
+
 
