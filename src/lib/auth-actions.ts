@@ -71,6 +71,8 @@ export async function signUpWithEmail(params: {
   } catch (err: unknown) {
     const code = (err as { code?: string })?.code;
 
+    console.log(code);
+
     if (code !== "auth/email-already-in-use") throw err;
 
     // Auth account already exists — sign in to get the uid and check Firestore

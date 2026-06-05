@@ -135,6 +135,12 @@ function TaskList({
   const [marking,     setMarking]     = useState<string | null>(null);
   const [pendingTask, setPendingTask] = useState<(TaskRecord & { completed: boolean }) | null>(null);
   const [showToast,   setShowToast]   = useState(false);
+  // Track which task links the user has opened — check button stays disabled until they have
+  const [clickedLinks, setClickedLinks] = useState<Set<string>>(new Set());
+
+  function handleLinkClick(taskId: string) {
+    setClickedLinks((prev) => new Set(prev).add(taskId));
+  }
 
   const countdown = useCountdown(cycle.windowClose as unknown as { _seconds: number });
   const done  = tasks.filter((t) => t.completed).length;
@@ -234,6 +240,7 @@ function TaskList({
               href={task.targetUrl}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => handleLinkClick(task.id)}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--grey-50)] text-xl hover:opacity-80 transition-opacity"
               title={`Open on ${task.platform}`}
             >
@@ -248,15 +255,16 @@ function TaskList({
               href={task.targetUrl}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => handleLinkClick(task.id)}
               className="flex-1 min-w-0"
             >
               <p className="text-sm font-semibold text-[var(--ink)]">{task.description}</p>
               <p className="text-xs text-[var(--blue)]">
-                Open on {task.platform}
+                {clickedLinks.has(task.id) ? `Opened · tap ✓ to mark done` : `Open on ${task.platform}`}
               </p>
             </a>
 
-            {/* Check button — only this marks task done */}
+            {/* Check button — only enabled after the link has been opened */}
             {task.completed ? (
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--forest)] text-white">
                 <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
@@ -268,15 +276,17 @@ function TaskList({
             ) : (
               <button
                 onClick={() => requestMark(task)}
-                title="Mark as done"
-                className="
+                disabled={!clickedLinks.has(task.id)}
+                title={clickedLinks.has(task.id) ? "Mark as done" : "Open the link first"}
+                className={`
                   flex h-8 w-8 shrink-0 items-center justify-center
-                  rounded-full border-2 border-[var(--grey-200)]
-                  hover:border-[var(--blue)] hover:bg-[var(--blue-soft)]
-                  transition-all active:scale-95
-                "
+                  rounded-full border-2 transition-all active:scale-95
+                  ${clickedLinks.has(task.id)
+                    ? "border-[var(--grey-200)] hover:border-[var(--blue)] hover:bg-[var(--blue-soft)] cursor-pointer"
+                    : "border-[var(--grey-100)] bg-[var(--grey-50)] cursor-not-allowed opacity-40"
+                  }
+                `}
               >
-                {/* Empty checkmark outline on hover hint */}
                 <svg width="10" height="8" viewBox="0 0 10 8" fill="none" className="opacity-0 group-hover:opacity-100">
                   <path d="M1 4l2.5 2.5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -555,3 +565,5 @@ export default function HomePage() {
     </>
   );
 }
+
+
