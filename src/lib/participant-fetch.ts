@@ -25,6 +25,8 @@ async function clearParticipantSession(): Promise<void> {
     await fetch("/api/auth/session", { method: "DELETE", credentials: "include" });
   } catch {
     // best-effort — proceed to redirect even if this fails
+  } finally {
+     window.location.replace("/login");
   }
 }
 
@@ -37,8 +39,10 @@ async function refreshSession(): Promise<void> {
       const { onAuthStateChanged } = require("firebase/auth");
       const unsub = onAuthStateChanged(auth, (u: typeof user) => {
         unsub();
-        if (u) resolve();
-        else reject(new ParticipantFetchError(401, "Session expired. Please log in again."));
+        resolve();
+        // if (u) resolve();
+        // // let's logout after this
+        // else reject(new ParticipantFetchError(401, "Session expired. Please log in again."));
       });
     });
   }
