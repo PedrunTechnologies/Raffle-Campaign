@@ -7,14 +7,16 @@ import type { VoucherRecord, CycleRecord, VendorOptIn } from "@/lib/types";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { code: string } }
+  { params }: { params: Promise<{ code: string }> }
 ) {
   const result = await requireAdmin(req);
   if ("error" in result) return result.error;
+  
+  const { code } = await params;
 
   const { vendorId } = await req.json() as { vendorId?: string };
 
-  const voucherSnap = await adminDb.collection("vouchers").doc(params.code).get();
+  const voucherSnap = await adminDb.collection("vouchers").doc(code).get();
   if (!voucherSnap.exists) {
     return NextResponse.json({ error: "Voucher not found." }, { status: 404 });
   }
