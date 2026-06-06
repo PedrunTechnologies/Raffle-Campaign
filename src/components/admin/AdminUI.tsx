@@ -29,8 +29,8 @@ export function KpiTile({
   return (
     <div
       className={`rounded-2xl border p-5 ${accent
-          ? "border-[var(--ink)] bg-[var(--ink)] text-white"
-          : "border-[var(--line)] bg-white"
+        ? "border-[var(--ink)] bg-[var(--ink)] text-white"
+        : "border-[var(--line)] bg-white"
         }`}
     >
       <p
@@ -115,14 +115,27 @@ export function Table({
   headers,
   children,
   loading = false,
+  empty = false,
+  emptyMessage = "No data yet.",
+  emptyIcon = "🗂️",
 }: {
   headers: string[];
   children: React.ReactNode;
   loading?: boolean;
+  empty?: boolean;
+  emptyMessage?: string;
+  emptyIcon?: string;
 }) {
   return (
     <div className="overflow-x-auto">
-      {loading ? <TableLoader rows={headers.length} cols={6} /> :
+      {loading ? (
+        <TableLoader rows={headers.length} cols={6} />
+      ) : empty ? (
+        <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+          <span className="text-4xl">{emptyIcon}</span>
+          <p className="text-sm font-medium text-[var(--ink-soft)]">{emptyMessage}</p>
+        </div>
+      ) : (
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-[var(--line)] bg-[var(--grey-50)]">
@@ -138,7 +151,7 @@ export function Table({
           </thead>
           <tbody>{children}</tbody>
         </table>
-      }
+      )}
     </div>
   );
 }

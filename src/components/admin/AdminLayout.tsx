@@ -15,6 +15,7 @@ import {
   HiOutlineLogout,
   HiOutlineClipboardList,
   HiOutlineViewBoards,
+  HiOutlineTicket,
 } from "react-icons/hi";
 import { GiDiceSixFacesFive } from "react-icons/gi";
 import { RiStoreLine } from "react-icons/ri";
@@ -30,6 +31,7 @@ const NAV_MAIN = [
 const NAV_MANAGE = [
   { href: "/admin/vendors", icon: RiStoreLine, label: "Vendors" },
   { href: "/admin/participants", icon: HiOutlineUsers, label: "Participants" },
+  { href: "/admin/vouchers",     icon: HiOutlineTicket,        label: "Vouchers"     },
   { href: "/admin/cycles",        icon: HiOutlineViewBoards,    label: "Cycles"       },
   { href: "/admin/tasks", icon: HiOutlineClipboardList, label: "Tasks" },
   { href: "/admin/draw-logs", icon: HiOutlineCollection, label: "Draw logs" },
