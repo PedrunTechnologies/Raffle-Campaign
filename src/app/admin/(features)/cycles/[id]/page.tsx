@@ -1,17 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { HiOutlineArrowLeft } from "react-icons/hi";
 import Button from "@/components/ui/Button";
 import { Panel, Badge, Table, Tr, Td, PageHeader, FormField } from "@/components/admin/AdminUI";
-import { useEffect, useState } from "react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
-import { useParams } from "next/navigation";
-import { HiOutlineArrowLeft } from "react-icons/hi";
+import { useToast } from "@/components/ui/Toast";
 import type { CycleRecord, TaskRecord, CycleStatus } from "@/lib/types";
+import { adminPost, AdminFetchError } from "@/lib/admin-fetch";
+
 
 const STATUS_BADGE: Record<CycleStatus, { variant: "ok" | "pending" | "info"; label: string }> = {
-  draft:     { variant: "info",    label: "Draft"     },
-  started:   { variant: "ok",      label: "Live"      },
+  draft: { variant: "info", label: "Draft" },
+  started: { variant: "ok", label: "Live" },
   completed: { variant: "pending", label: "Completed" },
 };
 
@@ -24,14 +27,38 @@ function fmtTs(ts: { _seconds: number } | null | undefined): string {
 }
 
 export default function CycleDetailPage() {
-  const { user }  = useAdminAuth();
-  const params    = useParams();
-  const id        = params.id as string;
+  const { user } = useAdminAuth();
+  // const { toast } = useToast();
+  const params = useParams();
+  const id = params.id as string;
 
-  const [cycle,   setCycle]   = useState<CycleRecord | null>(null);
-  const [tasks,   setTasks]   = useState<TaskRecord[]>([]);
+  const [cycle, setCycle] = useState<CycleRecord | null>(null);
+  const [tasks, setTasks] = useState<TaskRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState("");
+  const [error, setError] = useState("");
+  // const [extending, setExtending] = useState(false);
+
+
+  // async function handleExtendVouchers() {
+  //   if (!cycle) return;
+  //   setExtending(true);
+  //   try {
+  //     const res = await adminPost<{ updatedCount: number; extendedBy: number }>(
+  //       `/api/admin/cycles/${id}/extend-vouchers`, {}
+  //     );
+  //     toast(`Extended ${res.updatedCount} voucher${res.updatedCount === 1 ? "" : "s"} by ${res.extendedBy} hours.`, "success");
+  //     // Reflect the updated cooldownHours locally
+  //     setCycle((prev) => prev ? { ...prev, cooldownHours: prev.cooldownHours + res.extendedBy } : prev);
+  //   } catch (err) {
+  //     toast(err instanceof AdminFetchError ? err.message : "Failed to extend vouchers.", "error");
+  //   } finally {
+  //     setExtending(false);
+  //   }
+  // }
+
+
+
+
 
   useEffect(() => {
     if (!user) return;
@@ -43,11 +70,11 @@ export default function CycleDetailPage() {
           fetch("/api/admin/tasks", { headers }),
         ]);
         const cycleData = await cycleRes.json() as CycleRecord;
-        const allTasks  = await tasksRes.json() as TaskRecord[];
+        const allTasks = await tasksRes.json() as TaskRecord[];
         setCycle(cycleData);
         setTasks(allTasks.filter((t) => cycleData.taskIds.includes(t.id)));
-      } catch {
-        setError("Failed to load cycle.");
+      } catch (err) {
+        setError(err instanceof AdminFetchError ? err.message : "Failed to load cycle.");
       } finally {
         setLoading(false);
       }
@@ -70,12 +97,12 @@ export default function CycleDetailPage() {
     );
   }
 
-  const sb       = STATUS_BADGE[cycle.status];
-  const isLive   = cycle.status === "started";
-  const isDone   = cycle.status === "completed";
-  const canEdit  = !isDone;
+  const sb = STATUS_BADGE[cycle.status];
+  const isLive = cycle.status === "started";
+  const isDone = cycle.status === "completed";
+  const canEdit = !isDone;
 
-  const totalFree     = cycle.vendorOptIns.reduce((s, v) => s + v.freeVouchers, 0);
+  const totalFree = cycle.vendorOptIns.reduce((s, v) => s + v.freeVouchers, 0);
   const totalDiscount = cycle.vendorOptIns.reduce(
     (s, v) => s + v.discountTiers.reduce((ss, t) => ss + t.quantity, 0), 0
   );
@@ -135,10 +162,49 @@ export default function CycleDetailPage() {
               label="Window closes"
               value={fmtTs(cycle.windowClose as unknown as { _seconds: number })}
             />
-            <FormField label="Cooldown"   value={`${cycle.cooldownHours} hours`} />
-            <FormField label="Created"    value={fmtTs(cycle.createdAt as unknown as { _seconds: number })} />
+            <FormField label="Cooldown" value={`${cycle.cooldownHours} hours`} />
+            <FormField label="Created" value={fmtTs(cycle.createdAt as unknown as { _seconds: number })} />
           </div>
         </Panel>
+        {/* Timing */}
+        {/* <Panel title="Timing">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField
+              label="Window opened"
+              value={isLive || isDone ? fmtTs(cycle.windowOpen as unknown as { _seconds: number } | null) : "Not started yet"}
+              hint={isLive || isDone ? "Set to server time at start — immutable" : undefined}
+            />
+            <FormField
+              label="Window closes"
+              value={fmtTs(cycle.windowClose as unknown as { _seconds: number })}
+            />
+            <FormField label="Cooldown" value={`${cycle.cooldownHours} hours`} />
+            <FormField label="Created" value={fmtTs(cycle.createdAt as unknown as { _seconds: number })} />
+          </div>
+
+          {isDone && cycle.drawLogId && (
+            <div className="mt-5 flex items-center justify-between gap-4 rounded-xl border border-[var(--line)] bg-[var(--grey-50)] px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold text-[var(--ink)]">Extend voucher expiry</p>
+                <p className="mt-0.5 text-xs text-[var(--ink-soft)]">
+                  Adds 72 hours to all active (won / issued / eligible) vouchers in this cycle.
+                </p>
+              </div>
+              <button
+                onClick={handleExtendVouchers}
+                disabled={extending}
+                className="
+                  shrink-0 rounded-xl border border-[var(--line)] bg-white
+                  px-4 py-2 text-sm font-semibold text-[var(--ink)]
+                  transition-all hover:border-[var(--grey-200)] hover:shadow-sm
+                  active:scale-95 disabled:opacity-50
+                "
+              >
+                {extending ? "Extending…" : "+ 72 hours"}
+              </button>
+            </div>
+          )}
+        </Panel> */}
 
         {/* Draw */}
         <Panel title="Draw parameters">
@@ -237,3 +303,4 @@ export default function CycleDetailPage() {
     </>
   );
 }
+

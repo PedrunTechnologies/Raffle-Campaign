@@ -6,6 +6,7 @@ import { Panel, Badge, Table, Tr, Td, PageHeader, KpiTile } from "@/components/a
 import { useToast } from "@/components/ui/Toast";
 import { adminGet, adminPost, AdminFetchError } from "@/lib/admin-fetch";
 import { VoucherRecord } from "@/lib/types";
+import type { LeftoverResponse, VendorLeftover } from "@/app/api/admin/vouchers/leftover/route";
 
 type StatusFilter = "all" | "issued" | "won" | "redeemed" | "expired" | "no_prize";
 
@@ -44,25 +45,34 @@ function fmtTs(ts: { _seconds: number } | null | undefined) {
   });
 }
 
-
 /* ── Upgrade modal ───────────────────────────────────────────────── */
 interface UpgradeModalProps {
   voucher: VoucherRow;
-  leftover: number;
+  leftover: LeftoverResponse | null;
   onClose: () => void;
-  onUpgraded: (code: string) => void;
+  onUpgraded: (code: string, vendorId: string, vendorName: string) => void;
 }
 
 function UpgradeModal({ voucher, leftover, onClose, onUpgraded }: UpgradeModalProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [selectedVendorId, setSelectedVendorId] = useState<string>("");
+
+  const vendorsWithSlots = leftover?.vendors.filter((v) => v.remaining > 0) ?? [];
+  const totalRemaining = leftover?.totalRemaining ?? 0;
+
+  const canUpgrade = totalRemaining > 0 && voucher.type === "discount" &&
+    ["won", "issued", "eligible"].includes(voucher.status);
 
   async function handleUpgrade() {
     setLoading(true);
     try {
-      await adminPost(`/api/admin/vouchers/${encodeURIComponent(voucher.code)}/upgrade`, {});
-      toast("Voucher upgraded to free!", "success");
-      onUpgraded(voucher.code);
+      const res = await adminPost<{ code: string; vendorId: string; vendorName: string }>(
+        `/api/admin/vouchers/${encodeURIComponent(voucher.code)}/upgrade`,
+        { vendorId: selectedVendorId || undefined }
+      );
+      toast(`Voucher upgraded to free (${res.vendorName}).`, "success");
+      onUpgraded(voucher.code, res.vendorId, res.vendorName);
     } catch (err) {
       toast(err instanceof AdminFetchError ? err.message : "Upgrade failed.", "error");
     } finally {
@@ -70,8 +80,7 @@ function UpgradeModal({ voucher, leftover, onClose, onUpgraded }: UpgradeModalPr
     }
   }
 
-  const canUpgrade = leftover > 0 && voucher.type === "discount" &&
-    ["won", "issued", "eligible"].includes(voucher.status);
+
 
   return (
     <div
@@ -144,19 +153,18 @@ function UpgradeModal({ voucher, leftover, onClose, onUpgraded }: UpgradeModalPr
           {/* Upgrade section */}
           {voucher.type === "discount" && (
             <div className={`rounded-xl border p-4 ${canUpgrade ? "border-[var(--forest)]/30 bg-[var(--forest)]/5" : "border-[var(--line)] bg-[var(--grey-50)]"}`}>
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
                   <p className="text-sm font-semibold text-[var(--ink)]">
                     Upgrade to free voucher
                   </p>
                   {canUpgrade ? (
                     <p className="mt-0.5 text-xs text-[var(--ink-soft)]">
-                      {leftover} free {leftover === 1 ? "slot" : "slots"} left in this cycle.
-                      This will convert the discount to a fully free voucher.
+                      {totalRemaining} free {totalRemaining === 1 ? "slot" : "slots"} available across {vendorsWithSlots.length} {vendorsWithSlots.length === 1 ? "vendor" : "vendors"}.
                     </p>
                   ) : (
                     <p className="mt-0.5 text-xs text-[var(--mute)]">
-                      {leftover <= 0
+                      {totalRemaining <= 0
                         ? "No free slots remaining in this cycle."
                         : `Cannot upgrade a voucher with status "${voucher.status}".`
                       }
@@ -167,17 +175,71 @@ function UpgradeModal({ voucher, leftover, onClose, onUpgraded }: UpgradeModalPr
               </div>
 
               {canUpgrade && (
-                <button
-                  onClick={handleUpgrade}
-                  disabled={loading}
-                  className="
-                    mt-4 w-full rounded-xl bg-[var(--forest)] px-4 py-2.5
+                <>
+                  {/* Per-vendor slot breakdown */}
+                  <div className="mb-3 space-y-1.5">
+                    {vendorsWithSlots.map((v: VendorLeftover) => (
+                      <label
+                        key={v.vendorId}
+                        className={`
+                        flex cursor-pointer items-center justify-between rounded-lg border px-3 py-2 transition-all
+                        ${selectedVendorId === v.vendorId
+                            ? "border-[var(--forest)] bg-white"
+                            : "border-[var(--line)] bg-white hover:border-[var(--grey-200)]"
+                          }
+                      `}
+                      >
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="vendorSelect"
+                            value={v.vendorId}
+                            checked={selectedVendorId === v.vendorId}
+                            onChange={() => setSelectedVendorId(v.vendorId)}
+                            className="accent-[var(--forest)]"
+                          />
+                          <span className="text-sm font-medium text-[var(--ink)]">{v.vendorName}</span>
+                        </div>
+                        <span className="text-xs text-[var(--ink-soft)]">
+                          {v.remaining} / {v.allocated} slots left
+                        </span>
+                      </label>
+                    ))}
+                    {vendorsWithSlots.length > 1 && (
+                      <label
+                        className={`
+                        flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 transition-all
+                        ${selectedVendorId === ""
+                            ? "border-[var(--forest)] bg-white"
+                            : "border-[var(--line)] bg-white hover:border-[var(--grey-200)]"
+                          }
+                      `}
+                      >
+                        <input
+                          type="radio"
+                          name="vendorSelect"
+                          value=""
+                          checked={selectedVendorId === ""}
+                          onChange={() => setSelectedVendorId("")}
+                          className="accent-[var(--forest)]"
+                        />
+                        <span className="text-sm text-[var(--ink-soft)]">Auto-assign vendor</span>
+                      </label>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={handleUpgrade}
+                    disabled={loading}
+                    className="
+                    w-full rounded-xl bg-[var(--forest)] px-4 py-2.5
                     text-sm font-semibold text-white transition-all
                     hover:opacity-90 active:scale-[0.98] disabled:opacity-50
                   "
-                >
-                  {loading ? "Upgrading…" : "Upgrade to free"}
-                </button>
+                  >
+                    {loading ? "Upgrading…" : "Upgrade to free"}
+                  </button>
+                </>
               )}
             </div>
           )}
@@ -202,7 +264,7 @@ export default function VouchersPage() {
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<VoucherRow | null>(null);
-  const [freeLeftover, setFreeLeftover] = useState<Record<string, number>>({});
+  const [freeLeftover, setFreeLeftover] = useState<Record<string, LeftoverResponse>>({});
 
 
 
@@ -216,26 +278,19 @@ export default function VouchersPage() {
       // We don't have vendorOptIn totals here, so fetch them from a separate
       // endpoint. For now we store the count of existing free vouchers per cycle
       // and let the server validate headroom on upgrade.
-      const leftovers: Record<string, number> = {};
-      const byCycle = new Map<string, VoucherRow[]>();
-      data.forEach((r) => {
-        if (!byCycle.has(r.cycleId)) byCycle.set(r.cycleId, []);
-        byCycle.get(r.cycleId)!.push(r);
-      });
-
-      // Fetch headroom for each unique cycle that has discount vouchers
+      const leftovers: Record<string, LeftoverResponse> = {};
       const cyclesWithDiscount = [...new Set(
         data.filter((r) => r.type === "discount").map((r) => r.cycleId)
       )];
 
       await Promise.all(cyclesWithDiscount.map(async (cycleId) => {
         try {
-          const res = await adminGet<{ leftover: number }>(
+          const res = await adminGet<LeftoverResponse>(
             `/api/admin/vouchers/leftover?cycleId=${encodeURIComponent(cycleId)}`
           );
-          leftovers[cycleId] = res.leftover;
+          leftovers[cycleId] = res;
         } catch {
-          leftovers[cycleId] = 0;
+          leftovers[cycleId] = { cycleId, totalAllocated: 0, totalIssued: 0, totalRemaining: 0, vendors: [] };
         }
       }));
 
@@ -251,23 +306,33 @@ export default function VouchersPage() {
   useEffect(() => { loadData(); }, [loadData]);
 
 
-  function handleUpgraded(code: string) {
+  function handleUpgraded(code: string, vendorId: string, vendorName: string) {
     setRows((prev) =>
       prev.map((r) =>
         r.code === code
-          ? { ...r, type: "free", discountPct: null }
+          ? { ...r, type: "free", discountPct: null, vendorId, vendorName }
           : r
       )
     );
-    if (selected?.code === code) {
-      setSelected((prev) => prev ? { ...prev, type: "free", discountPct: null } : null);
-    }
-    // Decrement leftover for this cycle
+    setSelected((prev) =>
+      prev?.code === code
+        ? { ...prev, type: "free", discountPct: null, vendorId, vendorName }
+        : prev
+    );
     if (selected) {
-      setFreeLeftover((prev) => ({
-        ...prev,
-        [selected.cycleId]: Math.max(0, (prev[selected.cycleId] ?? 0) - 1),
-      }));
+      setFreeLeftover((prev) => {
+        const cycleLeftover = prev[selected.cycleId];
+        if (!cycleLeftover) return prev;
+        return {
+          ...prev,
+          [selected.cycleId]: {
+            ...cycleLeftover,
+            totalIssued: cycleLeftover.totalIssued + 1,
+            totalRemaining: Math.max(0, cycleLeftover.totalRemaining - 1),
+            vendors: cycleLeftover.vendors.map((v) => v),
+          },
+        };
+      });
     }
   }
 
@@ -355,13 +420,13 @@ export default function VouchersPage() {
             const badge = STATUS_BADGE[row.status] ?? { variant: "info" as const, label: row.status };
             const upgradeable = row.type === "discount" &&
               ["won", "issued", "eligible"].includes(row.status) &&
-              (freeLeftover[row.cycleId] ?? 0) > 0;
+              (freeLeftover[row.cycleId]?.totalRemaining ?? 0) > 0;
 
             return (
               <Tr
                 key={row.code}
-                // onClick={() => setSelected(row)}
-                // className="cursor-pointer hover:bg-[var(--grey-50)] transition-colors"
+              // onClick={() => setSelected(row)}
+              // className="cursor-pointer hover:bg-[var(--grey-50)] transition-colors"
               >
                 <Td>
                   <span className="font-mono text-sm font-semibold text-[var(--blue)]">
@@ -403,7 +468,7 @@ export default function VouchersPage() {
       {selected && (
         <UpgradeModal
           voucher={selected}
-          leftover={freeLeftover[selected.cycleId] ?? 0}
+          leftover={freeLeftover[selected.cycleId] ?? null}
           onClose={() => setSelected(null)}
           onUpgraded={handleUpgraded}
         />
@@ -411,4 +476,5 @@ export default function VouchersPage() {
     </>
   );
 }
+
 
