@@ -26,7 +26,8 @@ async function clearParticipantSession(): Promise<void> {
   } catch {
     // best-effort — proceed to redirect even if this fails
   } finally {
-     window.location.replace("/login");
+    //  window.location.replace("/login");
+    window.location.href = "/login";
   }
 }
 
