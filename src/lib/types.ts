@@ -68,8 +68,8 @@ export interface VendorRecord {
 /* ── Tasks (/tasks/{id}) ─────────────────────────────────────────── */
 export type TaskPlatform = "instagram" | "facebook" | "x" | "tiktok";
 export type TaskType =
-  | "follow" | "share" | "like" | "comment"
-  | "like_and_comment" | "repost" | "tag_friends" | "story_share";
+  | "follow" | "share" | "like" | "comment" | "like_and_comment" 
+  | "join_group" | "repost" | "tag_friends" | "story_share";
 
 export interface TaskRecord {
   id:            string;

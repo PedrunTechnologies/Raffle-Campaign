@@ -15,6 +15,7 @@ const PLATFORM_OPTIONS = [
   { value: "facebook",  label: "Facebook"  },
   { value: "x",         label: "X (Twitter)" },
   { value: "tiktok",    label: "TikTok"    },
+  { value: "",    label: "TikTok"    },
 ];
 
 const TYPE_OPTIONS = [
@@ -24,6 +25,7 @@ const TYPE_OPTIONS = [
   { value: "comment",          label: "Comment"         },
   { value: "like_and_comment", label: "Like & Comment"  },
   { value: "repost",           label: "Repost"          },
+  { value: "join_group",       label: "Join Group"          },
   { value: "tag_friends",      label: "Tag Friends"     },
   { value: "story_share",      label: "Story Share"     },
 ];
@@ -34,7 +36,7 @@ const PLATFORM_LABELS: Record<string, string> = {
 
 const TYPE_LABELS: Record<string, string> = {
   follow: "Follow", share: "Share", like: "Like", comment: "Comment",
-  like_and_comment: "Like & Comment", repost: "Repost",
+  like_and_comment: "Like & Comment", repost: "Repost", join_group: "Join Group",
   tag_friends: "Tag Friends", story_share: "Story Share",
 };
 

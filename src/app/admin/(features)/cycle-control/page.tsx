@@ -12,12 +12,12 @@ import { Suspense } from "react";
 
 
 const PLATFORM_LABELS: Record<string, string> = {
-  instagram: "Ig", facebook: "Fb", x: "X", tiktok: "Tt",
+  instagram: "Ig", facebook: "Fb", x: "X", tiktok: "Tt", whatsapp: "WA",
 };
 
 const TYPE_LABELS: Record<string, string> = {
   follow: "Follow", share: "Share", like: "Like", comment: "Comment",
-  like_and_comment: "Like & Comment", repost: "Repost",
+  like_and_comment: "Like & Comment", repost: "Repost", join_group: "Goin Group",
   tag_friends: "Tag Friends", story_share: "Story Share",
 };
 

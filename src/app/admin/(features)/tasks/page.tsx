@@ -13,6 +13,7 @@ const PLATFORM_LABELS: Record<string, string> = {
   facebook: "Facebook",
   x: "X",
   tiktok: "TikTok",
+  whatsapp: "WhatsApp",
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -21,6 +22,7 @@ const TYPE_LABELS: Record<string, string> = {
   like: "Like",
   comment: "Comment",
   like_and_comment: "Like & Comment",
+  join_group: "Join Group",
   repost: "Repost",
   tag_friends: "Tag Friends",
   story_share: "Story Share",

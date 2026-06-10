@@ -16,6 +16,7 @@ const PLATFORM_OPTIONS = [
   { value: "facebook", label: "Facebook" },
   { value: "x", label: "X (Twitter)" },
   { value: "tiktok", label: "TikTok" },
+  { value: "whatsapp", label: "WhatsApp" },
 ];
 
 const TASK_TYPE_OPTIONS = [
@@ -27,6 +28,7 @@ const TASK_TYPE_OPTIONS = [
   { value: "repost", label: "Repost" },
   { value: "tag_friends", label: "Tag Friends" },
   { value: "story_share", label: "Story Share" },
+  { value: "join_group", label: "Join Group" },
 ];
 
 /* URL type: follow tasks target a profile; engagement tasks target a post */
@@ -54,6 +56,7 @@ function descriptionTemplate(taskType: string, platform: string, url: string): s
     case "like": return `Like our post on ${p}`;
     case "comment": return `Leave a comment on our ${p} post`;
     case "like_and_comment": return `Like and comment on our ${p} post`;
+    case "join_group": return `Join our ${p} group`;
     case "repost": return `Repost our post on ${p}`;
     case "tag_friends": return `Tag 2 friends in the comments on ${p}`;
     case "story_share": return `Share the post to your ${p} story`;
