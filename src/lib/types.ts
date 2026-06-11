@@ -66,7 +66,7 @@ export interface VendorRecord {
 
 
 /* ── Tasks (/tasks/{id}) ─────────────────────────────────────────── */
-export type TaskPlatform = "instagram" | "facebook" | "x" | "tiktok";
+export type TaskPlatform = "instagram" | "facebook" | "x" | "tiktok" | "whatsapp";
 export type TaskType =
   | "follow" | "share" | "like" | "comment" | "like_and_comment" 
   | "join_group" | "repost" | "tag_friends" | "story_share";
@@ -113,9 +113,12 @@ export interface CycleRecord {
 
 
 export interface VendorOptIn {
-  vendorId:      string;
-  vendorName:    string;
-  freeVouchers:  number;
+  vendorId:       string;
+  vendorName:     string;
+  freeVouchers:   number;
+  freeMealAmount: number;
+  freeDineIn:     "yes" | "no";
+  freeDineUntil:   string;
   discountTiers: DiscountTier[];
 }
 
@@ -123,6 +126,7 @@ export interface VendorOptIn {
 export interface DiscountTier {
   percentage:      number;
   quantity:        number;
+  maxMealAmount:   number;
   dineInAvailable: "yes" | "no";
   dineInUntil:     string;
 }

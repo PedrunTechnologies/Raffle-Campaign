@@ -11,9 +11,9 @@ type Props = {
 export default function SelectField({ label, options, value, onChange, hint }: Props) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[11px] font-semibold uppercase tracking-widest text-[var(--mute)]">
+      {!!label && <label className="text-[11px] font-semibold uppercase tracking-widest text-[var(--mute)]">
         {label}
-      </label>
+      </label>}
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}

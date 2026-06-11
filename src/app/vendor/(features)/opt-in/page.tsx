@@ -48,6 +48,26 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+function AmountInput({ value, onChange, placeholder = "e.g. 5000" }: {
+  value: number;
+  onChange: (n: number) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div className="flex items-center gap-1.5 rounded-2xl border border-[var(--line)] bg-white px-4 py-3.5">
+      <span className="text-sm font-medium text-[var(--mute)]">₦</span>
+      <input
+        type="number"
+        min={0}
+        value={value || ""}
+        placeholder={placeholder}
+        onChange={(e) => onChange(Math.max(0, Number(e.target.value)))}
+        className="w-full bg-transparent text-sm font-semibold text-[var(--ink)] outline-none placeholder:font-normal placeholder:text-[var(--mute)]"
+      />
+    </div>
+  );
+}
+
 function Stepper({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   return (
     <div className="flex items-center gap-2 rounded-2xl border border-[var(--line)] bg-white px-4 py-3.5">
@@ -71,6 +91,7 @@ function Stepper({ value, onChange }: { value: number; onChange: (n: number) => 
 /* ── types ─────────────────────────────────────────────────────────────── */
 interface FreeVoucher {
   quantity: number;
+  maxMealAmount: number;
   dineInAvailable: "yes" | "no";
   dineInUntil: string; // "21:00"
 }
@@ -90,23 +111,20 @@ export default function OptInPage() {
   const [freeDineUntil, setFreeDineUntil] = useState("21:00");
 
   const [tiers, setTiers] = useState<TierState[]>([
-    { _id: uid(), quantity: 5, percentage: 30, dineInAvailable: "yes", dineInUntil: "21:00" },
+    { _id: uid(), quantity: 5, percentage: 30, maxMealAmount: 0, dineInAvailable: "yes", dineInUntil: "21:00" },
   ]);
-
-
-
-
 
   /* free voucher section */
   const [freeVoucher, setFreeVoucher] = useState<FreeVoucher>({
     quantity: 10,
+    maxMealAmount: 0,
     dineInAvailable: "yes",
     dineInUntil: "21:00",
   });
 
   /* discount tiers */
   const [discountTiers, setDiscountTiers] = useState<DiscountTier[]>([
-    { quantity: 10, percentage: 30, dineInAvailable: "yes", dineInUntil: "21:00" },
+    { quantity: 10, percentage: 30, maxMealAmount: 0, dineInAvailable: "yes", dineInUntil: "21:00" },
   ]);
 
 
@@ -114,9 +132,6 @@ export default function OptInPage() {
   const freeTotalQty = includeFree ? freeVoucher.quantity : 0;
   const discountTotalQty = discountTiers.reduce((s, t) => s + t.quantity, 0);
   const grandTotal = freeTotalQty + discountTotalQty;
-
-
-
 
 
 
@@ -142,7 +157,7 @@ export default function OptInPage() {
   useEffect(() => { loadStatus(); }, [loadStatus]);
 
   function addTier() {
-    setTiers((prev) => [...prev, { _id: uid(), quantity: 5, percentage: 30, dineInAvailable: "yes", dineInUntil: "21:00" }]);
+    setTiers((prev) => [...prev, { _id: uid(), quantity: 5, percentage: 30, maxMealAmount: 0, dineInAvailable: "yes", dineInUntil: "21:00" }]);
   }
 
   function removeTier(id: string) {
@@ -163,6 +178,9 @@ export default function OptInPage() {
     try {
       await vendorPost("/api/vendor/opt-in", {
         freeVouchers: freeTotal,
+        freeMealAmount: freeVoucher.maxMealAmount,
+        freeDineIn: freeVoucher.dineInAvailable,
+        freeDineUntil: freeVoucher.dineInUntil,
         discountTiers: tiers.map(({ _id, ...t }) => t),
       });
       setSubmitted(true);
@@ -238,13 +256,13 @@ export default function OptInPage() {
 
       <div className="max-w-3xl space-y-5">
         {/* ── Citywide pool ── */}
-              <Meter
+        <Meter
           label={`Citywide pool — cycle #${status.cycleNumber} forecast`}
-                value={status.totalPool}
-                max={status.estimatedPool}
-                subleft={`Confirmed by ${status.vendorCount} vendors`}
-                subright={`Need: ${status.estimatedPool - status.vendorCount} more`}
-              />
+          value={status.totalPool}
+          max={status.estimatedPool}
+          subleft={`Confirmed by ${status.vendorCount} vendors`}
+          subright={`Need: ${status.estimatedPool - status.vendorCount} more`}
+        />
 
         {/* Free vouchers */}
         <Panel title="Free vouchers">
@@ -261,10 +279,17 @@ export default function OptInPage() {
 
           {includeFree && (
             <div className="space-y-4 rounded-2xl border border-[var(--line)] bg-[var(--grey-50)] p-5">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
                   <FieldLabel>Number of vouchers</FieldLabel>
                   <Stepper value={freeQty} onChange={setFreeQty} />
+                </div>
+                <div>
+                  <FieldLabel>Max meal amount</FieldLabel>
+                  <AmountInput
+                    value={freeVoucher.maxMealAmount}
+                    onChange={(n) => setFreeVoucher((v) => ({ ...v, maxMealAmount: n }))}
+                  />
                 </div>
                 <div>
                   <FieldLabel>Dine-in available?</FieldLabel>
@@ -277,6 +302,11 @@ export default function OptInPage() {
                   </div>
                 )}
               </div>
+              {freeVoucher.maxMealAmount > 0 && (
+                <p className="text-xs text-[var(--ink-soft)]">
+                  Each free voucher covers meals up to <strong className="text-[var(--ink)]">₦{freeVoucher.maxMealAmount.toLocaleString()}</strong>.
+                </p>
+              )}
             </div>
           )}
         </Panel>
@@ -314,6 +344,13 @@ export default function OptInPage() {
                     <Stepper value={tier.quantity} onChange={(n) => updateTier(tier._id, "quantity", n)} />
                   </div>
                   <div>
+                    <FieldLabel>Max meal amount</FieldLabel>
+                    <AmountInput
+                      value={tier.maxMealAmount}
+                      onChange={(n) => updateTier(tier._id, "maxMealAmount", n)}
+                    />
+                  </div>
+                  <div>
                     <FieldLabel>Dine-in?</FieldLabel>
                     <SelectField label="" options={DINE_OPTIONS} value={tier.dineInAvailable}
                       onChange={(v) => updateTier(tier._id, "dineInAvailable", v as "yes" | "no")} />
@@ -329,6 +366,9 @@ export default function OptInPage() {
                 <div className="mt-4 rounded-xl bg-white px-4 py-2.5 text-sm text-[var(--ink-soft)]">
                   <span className="font-semibold text-[var(--ink)]">{tier.quantity} voucher{tier.quantity > 1 ? "s" : ""}</span>
                   {" "}at <span className="font-semibold text-[var(--ink)]">{tier.percentage}% off</span>
+                  {tier.maxMealAmount > 0 && (
+                    <> · up to <span className="font-semibold text-[var(--ink)]">₦{tier.maxMealAmount.toLocaleString()}</span></>
+                  )}
                   {tier.dineInAvailable === "yes" ? ` · dine-in until ${tier.dineInUntil}` : " · no dine-in"}
                 </div>
               </div>
@@ -347,13 +387,23 @@ export default function OptInPage() {
           <div className="mb-5 space-y-2">
             {includeFree && freeTotal > 0 && (
               <div className="flex items-center justify-between rounded-xl bg-[var(--grey-50)] px-4 py-3">
-                <span className="text-sm text-[var(--ink-soft)]">Free meal vouchers</span>
+                <span className="text-sm text-[var(--ink-soft)]">
+                  Free meal vouchers
+                  {freeVoucher.maxMealAmount > 0 && (
+                    <span className="ml-1.5 text-xs">· up to ₦{freeVoucher.maxMealAmount.toLocaleString()}</span>
+                  )}
+                </span>
                 <span className="font-mono text-sm font-semibold">{freeTotal}</span>
               </div>
             )}
             {tiers.map((t, i) => (
               <div key={t._id} className="flex items-center justify-between rounded-xl bg-[var(--grey-50)] px-4 py-3">
-                <span className="text-sm text-[var(--ink-soft)]">Discount tier {i + 1} · {t.percentage}% off</span>
+                <span className="text-sm text-[var(--ink-soft)]">
+                  Discount tier {i + 1} · {t.percentage}% off
+                  {t.maxMealAmount > 0 && (
+                    <span className="ml-1.5 text-xs">· up to ₦{t.maxMealAmount.toLocaleString()}</span>
+                  )}
+                </span>
                 <span className="font-mono text-sm font-semibold">{t.quantity}</span>
               </div>
             ))}
@@ -376,6 +426,7 @@ export default function OptInPage() {
           </Button>
         </div>
       </div>
+
     </>
   );
 }

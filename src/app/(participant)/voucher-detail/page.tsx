@@ -14,6 +14,7 @@ import type { VoucherRecord, VendorRecord } from "@/lib/types";
 
 /* Vendor subset stitched on by the API */
 type VoucherWithVendor = VoucherRecord & {
+  maxMealAmount?: number;
   vendor: Pick<VendorRecord, "name" | "address" | "operatingHours" | "dineIn" | "phone" | "cuisine"> | null;
 };
 
@@ -111,6 +112,9 @@ function FreeVoucherCard({ voucher }: { voucher: VoucherWithVendor }) {
           { l: "Status", v: voucher.status.charAt(0).toUpperCase() + voucher.status.slice(1) },
           { l: "Issued", v: fmtTs(voucher.issuedAt as unknown as { _seconds: number }) },
           { l: "Expires", v: fmtTs(voucher.expiresAt as unknown as { _seconds: number }) },
+          ...(voucher.maxMealAmount
+            ? [{ l: "Max amount", v: `₦${voucher.maxMealAmount.toLocaleString()}` }]
+            : []),
         ].map((row) => (
           <div key={row.l} className="rounded-xl border border-[var(--line)] bg-white p-4">
             <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-[var(--mute)]">{row.l}</p>
@@ -165,6 +169,9 @@ function DiscountVoucherView({ voucher }: { voucher: VoucherWithVendor }) {
           { l: "Status", v: voucher.status.charAt(0).toUpperCase() + voucher.status.slice(1) },
           { l: "Issued", v: fmtTs(voucher.issuedAt as unknown as { _seconds: number }) },
           { l: "Expires", v: fmtTs(voucher.expiresAt as unknown as { _seconds: number }) },
+          ...(voucher.maxMealAmount
+            ? [{ l: "Max amount", v: `₦${voucher.maxMealAmount.toLocaleString()}` }]
+            : []),
         ].map((row) => (
           <div key={row.l} className="rounded-xl border border-[var(--line)] bg-white p-4">
             <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-[var(--mute)]">{row.l}</p>

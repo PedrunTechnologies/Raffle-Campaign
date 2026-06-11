@@ -6,6 +6,9 @@ import type { CycleRecord, DiscountTier } from "@/lib/types";
 
 interface OptInPayload {
   freeVouchers: number;
+  freeMealAmount: number;
+  freeDineIn: "yes" | "no";
+  freeDineUntil: string;
   discountTiers: DiscountTier[];
 }
 
@@ -17,6 +20,9 @@ export async function POST(req: NextRequest) {
 
   const freeVouchers = Number(body.freeVouchers) || 0;
   const discountTiers = body.discountTiers ?? [];
+  const freeMealAmount = body.freeMealAmount ?? 0;
+  const freeDineIn = body.freeDineIn ?? false;
+  const freeDineUntil = body.freeDineUntil ?? null;
   const totalVouchers = freeVouchers + discountTiers.reduce((s: number, t: DiscountTier) => s + (Number(t.quantity) || 0), 0);
 
   if (totalVouchers === 0) {
@@ -93,6 +99,9 @@ export async function POST(req: NextRequest) {
       vendorName: result.vendor.name,
       freeVouchers,
       discountTiers,
+      freeMealAmount,
+      freeDineIn,
+      freeDineUntil,
     };
 
     let updatedOptIns = [...(cycle.vendorOptIns ?? [])];
